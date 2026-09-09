@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>오늘도 화이팅 🌷</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-top:#FFF3F7;
+    --bg-bottom:#FDE9F1;
+    --pink:#FF9BB3;
+    --pink-deep:#FF7096;
+    --lavender:#E7CFF7;
+    --mint:#BFF2E4;
+    --yellow:#FFE08A;
+    --ink:#5B4A57;
+    --ink-soft:#8C7A88;
+    --card:#FFFFFF;
+    --shadow: 0 10px 24px rgba(255, 140, 170, 0.18);
+  }
+
+  *{ box-sizing:border-box; }
+
+  html,body{
+    height:100%;
+    margin:0;
+  }
+
+  body{
+    font-family:'Gowun Dodum', sans-serif;
+    color:var(--ink);
+    background:
+      radial-gradient(circle at 12% 18%, rgba(255,255,255,0.6) 0, rgba(255,255,255,0) 40%),
+      radial-gradient(circle at 88% 82%, rgba(255,255,255,0.5) 0, rgba(255,255,255,0) 45%),
+      linear-gradient(160deg, var(--bg-top), var(--bg-bottom));
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:32px 16px;
+    overflow-x:hidden;
+    position:relative;
+  }
+
+  .blob{
+    position:fixed;
+    border-radius:50%;
+    opacity:0.55;
+    z-index:0;
+    pointer-events:none;
+  }
+  .blob.b1{ width:180px; height:180px; background:var(--mint); top:-40px; left:-40px; }
+  .blob.b2{ width:140px; height:140px; background:var(--lavender); bottom:-30px; right:-30px; }
+  .blob.b3{ width:90px; height:90px; background:var(--yellow); top:60%; left:4%; opacity:0.45; }
+  .blob.b4{ width:60px; height:60px; background:var(--pink); top:8%; right:10%; opacity:0.4; }
+
+  .page{
+    position:relative;
+    z-index:1;
+    width:100%;
+    max-width:520px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:22px;
+    animation: pop-in 0.55s cubic-bezier(.26,1.4,.4,1) both;
+  }
+
+  @keyframes pop-in{
+    0%{ opacity:0; transform:translateY(14px) scale(0.97); }
+    100%{ opacity:1; transform:translateY(0) scale(1); }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .page{ animation:none; }
+  }
+
+  .greeting{
+    font-family:'Jua', sans-serif;
+    font-size:1.5rem;
+    color:var(--pink-deep);
+    text-align:center;
+    line-height:1.4;
+  }
+
+  .clock-card{
+    width:100%;
+    background:var(--card);
+    border-radius:32px;
+    padding:34px 24px;
+    text-align:center;
+    box-shadow:var(--shadow);
+    border:3px solid #fff;
+  }
+
+  .time{
+    font-family:'Jua', sans-serif;
+    font-size:3.2rem;
+    color:var(--ink);
+    letter-spacing:1px;
+  }
+
+  .time .sec{
+    font-size:1.6rem;
+    color:var(--ink-soft);
+  }
+
+  .date{
+    margin-top:6px;
+    font-size:1.05rem;
+    color:var(--ink-soft);
+  }
+
+  .search-card{
+    width:100%;
+  }
+
+  .search-box{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    background:var(--card);
+    border-radius:999px;
+    padding:14px 22px;
+    box-shadow:var(--shadow);
+    border:3px solid #fff;
+    transition:border-color .2s ease, transform .15s ease;
+  }
+
+  .search-box:focus-within{
+    border-color:var(--pink);
+    transform:scale(1.01);
+  }
+
+  .search-box img{
+    width:20px;
+    height:20px;
+    flex-shrink:0;
+  }
+
+  .search-box input{
+    flex:1;
+    border:none;
+    outline:none;
+    background:transparent;
+    font-family:'Gowun Dodum', sans-serif;
+    font-size:1rem;
+    color:var(--ink);
+    min-width:0;
+  }
+
+  .search-box input::placeholder{
+    color:#C9B8C4;
+  }
+
+  .search-box button{
+    border:none;
+    background:var(--pink);
+    color:#fff;
+    font-family:'Jua', sans-serif;
+    font-size:0.95rem;
+    padding:9px 18px;
+    border-radius:999px;
+    cursor:pointer;
+    transition:background .15s ease, transform .15s ease;
+  }
+
+  .search-box button:hover{
+    background:var(--pink-deep);
+    transform:translateY(-1px);
+  }
+
+  .search-box button:active{
+    transform:translateY(0);
+  }
+
+  .todo-card{
+    width:100%;
+    background:var(--card);
+    border-radius:28px;
+    padding:24px;
+    box-shadow:var(--shadow);
+    border:3px solid #fff;
+  }
+
+  .todo-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:14px;
+  }
+
+  .todo-title{
+    font-family:'Jua', sans-serif;
+    font-size:1.15rem;
+    color:var(--pink-deep);
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+
+  .todo-count{
+    font-size:0.85rem;
+    color:var(--ink-soft);
+    background:#FFF0F5;
+    padding:4px 12px;
+    border-radius:999px;
+  }
+
+  .todo-input-row{
+    display:flex;
+    gap:8px;
+    margin-bottom:14px;
+  }
+
+  .todo-input-row input{
+    flex:1;
+    border:2px solid #FBE1EB;
+    border-radius:14px;
+    padding:10px 14px;
+    font-family:'Gowun Dodum', sans-serif;
+    font-size:0.95rem;
+    outline:none;
+    color:var(--ink);
+    background:#FFFBFD;
+    transition:border-color .15s ease;
+    min-width:0;
+  }
+
+  .todo-input-row input:focus{
+    border-color:var(--pink);
+  }
+
+  .todo-input-row button{
+    border:none;
+    background:var(--lavender);
+    color:#6A4E86;
+    font-family:'Jua', sans-serif;
+    font-size:1.2rem;
+    width:44px;
+    border-radius:14px;
+    cursor:pointer;
+    transition:transform .15s ease, background .15s ease;
+  }
+
+  .todo-input-row button:hover{
+    background:#DAB6F2;
+    transform:scale(1.05);
+  }
+
+  .todo-list{
+    list-style:none;
+    margin:0;
+    padding:0;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    max-height:260px;
+    overflow-y:auto;
+  }
+
+  .todo-list::-webkit-scrollbar{
+    width:6px;
+  }
+  .todo-list::-webkit-scrollbar-thumb{
+    background:#FBD3E0;
+    border-radius:10px;
+  }
+
+  .todo-item{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    background:#FFF8FA;
+    border-radius:14px;
+    padding:10px 12px;
+    animation: item-in 0.25s ease both;
+  }
+
+  @keyframes item-in{
+    from{ opacity:0; transform:translateY(4px); }
+    to{ opacity:1; transform:translateY(0); }
+  }
+
+  .todo-check{
+    width:22px;
+    height:22px;
+    border-radius:50%;
+    border:2px solid var(--pink);
+    flex-shrink:0;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:0.8rem;
+    color:#fff;
+    background:transparent;
+    transition:background .15s ease;
+  }
+
+  .todo-check.done{
+    background:var(--pink);
+  }
+
+  .todo-text{
+    flex:1;
+    font-size:0.95rem;
+    word-break:break-word;
+    transition:color .15s ease;
+  }
+
+  .todo-text.done{
+    color:#C9B8C4;
+    text-decoration:line-through;
+  }
+
+  .todo-del{
+    border:none;
+    background:transparent;
+    color:#D8C4D2;
+    font-size:1.1rem;
+    cursor:pointer;
+    padding:2px 6px;
+    line-height:1;
+    transition:color .15s ease;
+  }
+
+  .todo-del:hover{
+    color:var(--pink-deep);
+  }
+
+  .empty-msg{
+    text-align:center;
+    color:var(--ink-soft);
+    font-size:0.9rem;
+    padding:14px 0;
+  }
+
+  footer{
+    font-size:0.8rem;
+    color:#C9B0BE;
+    text-align:center;
+  }
+</style>
+</head>
+<body>
+
+  <div class="blob b1"></div>
+  <div class="blob b2"></div>
+  <div class="blob b3"></div>
+  <div class="blob b4"></div>
+
+  <div class="page">
+
+    <div class="greeting" id="greeting">안녕하세요 🌷 오늘도 좋은 하루예요</div>
+
+    <div class="clock-card">
+      <div class="time"><span id="hm">00:00</span><span class="sec" id="sec">:00</span></div>
+      <div class="date" id="date">0000년 00월 00일 (월)</div>
+    </div>
+
+    <div class="search-card">
+      <form class="search-box" id="searchForm" action="https://www.google.com/search" method="GET">
+        <img src="https://www.google.com/favicon.ico" alt="구글" onerror="this.style.display='none'">
+        <input type="text" id="searchInput" name="q" placeholder="구글에서 검색해보세요" autocomplete="off">
+        <button type="submit">검색</button>
+      </form>
+    </div>
+
+    <div class="todo-card">
+      <div class="todo-header">
+        <div class="todo-title">✅ 오늘의 할 일</div>
+        <div class="todo-count" id="todoCount">0개 남음</div>
+      </div>
+      <div class="todo-input-row">
+        <input type="text" id="todoInput" placeholder="할 일을 입력하고 엔터를 눌러주세요" autocomplete="off">
+        <button id="todoAddBtn" aria-label="할 일 추가">＋</button>
+      </div>
+      <ul class="todo-list" id="todoList"></ul>
+    </div>
+
+    <footer>오늘 하루도 나에게 다정하게 🌸</footer>
+
+  </div>
+
+<script>
+  // ---------- 시계 & 날짜 ----------
+  const hmEl = document.getElementById('hm');
+  const secEl = document.getElementById('sec');
+  const dateEl = document.getElementById('date');
+  const greetingEl = document.getElementById('greeting');
+  const days = ['일','월','화','수','목','금','토'];
+
+  function pad(n){ return n.toString().padStart(2,'0'); }
+
+  function updateClock(){
+    const now = new Date();
+    hmEl.textContent = pad(now.getHours()) + ':' + pad(now.getMinutes());
+    secEl.textContent = ':' + pad(now.getSeconds());
+    dateEl.textContent = now.getFullYear() + '년 ' + (now.getMonth()+1) + '월 ' + now.getDate() + '일 (' + days[now.getDay()] + ')';
+
+    const h = now.getHours();
+    let msg = '안녕하세요 🌷 오늘도 좋은 하루예요';
+    if(h < 6) msg = '이 시간까지 깨어있다니 대단해요 🌙';
+    else if(h < 11) msg = '좋은 아침이에요 🌤️';
+    else if(h < 14) msg = '점심은 챙겨 드셨나요? 🍚';
+    else if(h < 18) msg = '오후도 힘내봐요 ☕';
+    else if(h < 22) msg = '오늘 하루도 고생 많으셨어요 🌆';
+    else msg = '이제 슬슬 쉴 시간이에요 🌙';
+    greetingEl.textContent = msg;
+  }
+
+  updateClock();
+  setInterval(updateClock, 1000);
+
+  // ---------- 할 일 목록 (localStorage에 저장, 날짜가 바뀌면 초기화) ----------
+  const todoInput = document.getElementById('todoInput');
+  const todoAddBtn = document.getElementById('todoAddBtn');
+  const todoList = document.getElementById('todoList');
+  const todoCount = document.getElementById('todoCount');
+
+  function todayKey(){
+    const now = new Date();
+    return 'todo_' + now.getFullYear() + '-' + pad(now.getMonth()+1) + '-' + pad(now.getDate());
+  }
+
+  const STORAGE_KEY = todayKey();
+
+  function loadTodos(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : [];
+    }catch(e){
+      return [];
+    }
+  }
+
+  function saveTodos(todos){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
+  }
+
+  let todos = loadTodos();
+
+  function render(){
+    todoList.innerHTML = '';
+
+    if(todos.length === 0){
+      const empty = document.createElement('li');
+      empty.className = 'empty-msg';
+      empty.textContent = '오늘 할 일을 추가해보세요 ✨';
+      todoList.appendChild(empty);
+    }
+
+    todos.forEach(function(todo, idx){
+      const li = document.createElement('li');
+      li.className = 'todo-item';
+
+      const check = document.createElement('button');
+      check.className = 'todo-check' + (todo.done ? ' done' : '');
+      check.setAttribute('aria-label', '완료 체크');
+      check.textContent = todo.done ? '✓' : '';
+      check.addEventListener('click', function(){
+        todos[idx].done = !todos[idx].done;
+        saveTodos(todos);
+        render();
+      });
+
+      const text = document.createElement('span');
+      text.className = 'todo-text' + (todo.done ? ' done' : '');
+      text.textContent = todo.text;
+
+      const del = document.createElement('button');
+      del.className = 'todo-del';
+      del.setAttribute('aria-label', '삭제');
+      del.textContent = '×';
+      del.addEventListener('click', function(){
+        todos.splice(idx, 1);
+        saveTodos(todos);
+        render();
+      });
+
+      li.appendChild(check);
+      li.appendChild(text);
+      li.appendChild(del);
+      todoList.appendChild(li);
+    });
+
+    const remaining = todos.filter(function(t){ return !t.done; }).length;
+    todoCount.textContent = remaining + '개 남음';
+  }
+
+  function addTodo(){
+    const val = todoInput.value.trim();
+    if(!val) return;
+    todos.push({ text: val, done: false });
+    saveTodos(todos);
+    todoInput.value = '';
+    render();
+  }
+
+  todoAddBtn.addEventListener('click', addTodo);
+  todoInput.addEventListener('keydown', function(e){
+    if(e.key === 'Enter'){
+      e.preventDefault();
+      addTodo();
+    }
+  });
+
+  render();
+</script>
+
+</body>
+</html>
