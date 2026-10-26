@@ -7,301 +7,471 @@
   <title>권민재 | 개인 홈페이지</title>
   <style>
     :root {
-      --green: #2f6b4f;
-      --green-dark: #214d39;
-      --green-light: #eaf3ec;
-      --cream: #f8f8f2;
-      --text: #26332c;
-      --muted: #69776e;
+      --green-950: #12372e;
+      --green-800: #1d5544;
+      --green-700: #287057;
+      --green-100: #e8f2eb;
+      --green-50: #f5f9f5;
+      --cream: #fbfaf5;
+      --ink: #23332d;
+      --muted: #65756d;
+      --line: #e0e8e0;
       --white: #ffffff;
+      --shadow: 0 18px 50px rgba(24, 63, 48, .08);
+      --radius: 22px;
     }
 
     * { box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
+    html { scroll-behavior: smooth; scroll-padding-top: 90px; }
     body {
       margin: 0;
-      font-family: "Pretendard", "Noto Sans KR", "Malgun Gothic", sans-serif;
-      color: var(--text);
       background: var(--cream);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR",
+                   "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
       line-height: 1.7;
+      word-break: keep-all;
     }
     a { color: inherit; }
-    .container { width: min(1000px, calc(100% - 40px)); margin: 0 auto; }
+    a:focus-visible {
+      outline: 3px solid #8bbd9d;
+      outline-offset: 4px;
+      border-radius: 5px;
+    }
+    .page-shell { width: min(1080px, calc(100% - 48px)); margin: 0 auto; }
 
-    header {
-      background: rgba(248, 248, 242, 0.94);
-      border-bottom: 1px solid #e4e9e1;
-      position: sticky;
-      top: 0;
-      z-index: 10;
-      backdrop-filter: blur(10px);
-    }
-    .nav {
-      min-height: 68px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 20px;
-    }
-    .brand {
-      text-decoration: none;
-      font-weight: 800;
-      color: var(--green-dark);
-      letter-spacing: -0.04em;
-      font-size: 1.15rem;
-    }
-    nav { display: flex; gap: 22px; flex-wrap: wrap; }
-    nav a {
-      text-decoration: none;
-      color: var(--muted);
-      font-size: 0.92rem;
-      font-weight: 600;
-    }
-    nav a:hover { color: var(--green); }
-
-    .hero { padding: 76px 0 58px; }
-    .hero-card {
+    /* SECTION 01: 상단 소개 영역 */
+    #site-header {
       position: relative;
       overflow: hidden;
-      border-radius: 28px;
-      padding: clamp(30px, 6vw, 68px);
+      padding: 82px 0 76px;
       color: var(--white);
-      background: linear-gradient(125deg, #28563f, #477c5c 65%, #7da47b);
-      box-shadow: 0 18px 45px rgba(40, 86, 63, 0.15);
+      background:
+        radial-gradient(ellipse at 90% 10%, rgba(167, 211, 168, .25), transparent 30%),
+        linear-gradient(135deg, #143c31 0%, #205844 58%, #36775b 100%);
     }
-    .hero-card::after {
-      content: "✳";
+    #site-header::after {
+      content: "";
       position: absolute;
-      right: 5%;
-      top: -50px;
-      font-size: clamp(150px, 25vw, 300px);
-      line-height: 1;
-      color: rgba(255,255,255,0.09);
+      width: 300px;
+      height: 300px;
+      right: -85px;
+      bottom: -180px;
+      border: 1px solid rgba(255,255,255,.18);
+      border-radius: 50%;
+      box-shadow: 0 0 0 35px rgba(255,255,255,.035), 0 0 0 70px rgba(255,255,255,.025);
       pointer-events: none;
     }
     .eyebrow {
-      display: inline-block;
-      padding: 5px 12px;
-      border: 1px solid rgba(255,255,255,0.45);
-      border-radius: 999px;
-      font-size: 0.82rem;
-      letter-spacing: 0.04em;
-      margin-bottom: 20px;
-    }
-    h1 {
-      font-size: clamp(2.2rem, 6vw, 4.2rem);
-      line-height: 1.2;
-      letter-spacing: -0.055em;
-      margin: 0 0 20px;
-    }
-    .hero p {
-      max-width: 660px;
-      font-size: clamp(1rem, 2vw, 1.18rem);
-      margin: 0;
-      color: rgba(255,255,255,0.91);
-    }
-    .hero-email { display: inline-block; margin-top: 25px; color: #fff; font-weight: 650; text-underline-offset: 4px; }
-
-    section { padding: 32px 0 42px; }
-    .section-heading { margin-bottom: 22px; }
-    .section-heading .kicker {
-      color: var(--green);
-      text-transform: uppercase;
-      font-size: 0.76rem;
-      letter-spacing: 0.15em;
-      font-weight: 800;
-    }
-    h2 {
-      margin: 3px 0 0;
-      font-size: clamp(1.55rem, 3vw, 2rem);
-      letter-spacing: -0.04em;
-    }
-    .intro-grid { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 20px; }
-    .panel {
-      background: var(--white);
-      border: 1px solid #e7ebe4;
-      border-radius: 20px;
-      padding: 26px;
-      box-shadow: 0 8px 24px rgba(38, 51, 44, 0.035);
-    }
-    .panel h3 { margin: 0 0 12px; font-size: 1.08rem; }
-    .panel p { margin: 0; color: var(--muted); }
-    .interest-list { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 15px; }
-    .tag {
       display: inline-flex;
       align-items: center;
-      gap: 7px;
-      padding: 8px 14px;
-      background: var(--green-light);
-      color: var(--green-dark);
-      border-radius: 999px;
+      gap: 9px;
+      margin: 0 0 18px;
+      color: #d5ead9;
+      font-size: .82rem;
       font-weight: 700;
-      font-size: 0.92rem;
+      letter-spacing: .13em;
+      text-transform: uppercase;
     }
-    .activity-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-    .activity-card {
-      background: var(--white);
-      border: 1px solid #e7ebe4;
-      border-radius: 20px;
-      padding: 24px;
+    .eyebrow::before {
+      content: "";
+      width: 24px;
+      height: 2px;
+      background: #b4d7b8;
     }
-    .activity-icon {
-      width: 42px; height: 42px;
-      display: grid; place-items: center;
-      background: var(--green-light);
-      border-radius: 13px;
-      font-size: 1.25rem;
-      margin-bottom: 15px;
+    #site-header h1 {
+      margin: 0;
+      font-size: clamp(2.7rem, 7vw, 5.1rem);
+      line-height: 1.12;
+      letter-spacing: -.055em;
+      font-weight: 800;
     }
-    .activity-card h3 { margin: 0 0 12px; font-size: 1.08rem; }
-    .activity-card ul { padding-left: 19px; margin: 0; color: var(--muted); }
-    .activity-card li + li { margin-top: 7px; }
-    .project-card {
+    .hero-intro {
+      max-width: 690px;
+      margin: 24px 0 0;
+      color: #e7f2e9;
+      font-size: clamp(1rem, 2.1vw, 1.2rem);
+      line-height: 1.9;
+    }
+    .hero-tags { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 28px; }
+    .hero-tag {
+      padding: 6px 13px;
+      border: 1px solid rgba(255,255,255,.25);
+      border-radius: 999px;
+      color: #f1f7f1;
+      font-size: .86rem;
+      background: rgba(255,255,255,.07);
+    }
+
+    /* SECTION 02: 본문 이동 메뉴 */
+    #site-navigation {
+      position: sticky;
+      z-index: 10;
+      top: 0;
+      border-bottom: 1px solid rgba(218, 229, 218, .9);
+      background: rgba(251, 250, 245, .94);
+      backdrop-filter: blur(14px);
+    }
+    #site-navigation .page-shell {
       display: flex;
       align-items: center;
       justify-content: space-between;
+      min-height: 66px;
       gap: 20px;
-      padding: 24px;
-      background: var(--white);
-      border: 1px solid #e7ebe4;
-      border-radius: 20px;
+    }
+    .nav-brand {
+      flex: 0 0 auto;
+      color: var(--green-950);
+      font-size: .96rem;
+      font-weight: 800;
       text-decoration: none;
-      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
     }
-    .project-card:hover {
-      transform: translateY(-3px);
-      border-color: #b6cfba;
-      box-shadow: 0 12px 28px rgba(38, 51, 44, 0.08);
+    #site-navigation ul {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 5px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
     }
-    .project-card h3 { margin: 0 0 5px; }
-    .project-card p { margin: 0; color: var(--muted); font-size: 0.94rem; }
-    .project-arrow {
-      flex: 0 0 42px;
-      width: 42px; height: 42px;
-      display: grid; place-items: center;
-      background: var(--green);
-      color: white;
-      border-radius: 50%;
-      font-size: 1.2rem;
+    #site-navigation a:not(.nav-brand) {
+      display: inline-block;
+      padding: 9px 12px;
+      border-radius: 999px;
+      color: #53645b;
+      font-size: .9rem;
+      font-weight: 650;
+      text-decoration: none;
+      transition: background .2s ease, color .2s ease;
     }
-    footer {
-      margin-top: 30px;
-      padding: 28px 0;
-      border-top: 1px solid #e4e9e1;
-      color: var(--muted);
-      font-size: 0.88rem;
-      text-align: center;
+    #site-navigation a:not(.nav-brand):hover {
+      background: var(--green-100);
+      color: var(--green-800);
     }
 
-    @media (max-width: 720px) {
-      .nav { padding: 14px 0; align-items: flex-start; flex-direction: column; gap: 8px; }
-      nav { gap: 14px; }
-      .hero { padding-top: 30px; }
-      .intro-grid, .activity-grid { grid-template-columns: 1fr; }
-      .hero-card { border-radius: 22px; }
+    /* SECTION 03: 주요 본문 */
+    main { padding: 54px 0 76px; }
+    section.content-section { margin: 0 0 24px; }
+    .section-card {
+      padding: clamp(24px, 4.5vw, 42px);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--white);
+      box-shadow: 0 8px 28px rgba(24, 63, 48, .035);
+    }
+    .section-heading {
+      display: flex;
+      align-items: flex-start;
+      gap: 15px;
+      margin-bottom: 25px;
+    }
+    .section-number {
+      display: inline-grid;
+      flex: 0 0 42px;
+      width: 42px;
+      height: 42px;
+      place-items: center;
+      border-radius: 14px;
+      background: var(--green-100);
+      color: var(--green-800);
+      font-size: .78rem;
+      font-weight: 800;
+    }
+    h2 {
+      margin: 0;
+      color: var(--green-950);
+      font-size: clamp(1.4rem, 3vw, 1.8rem);
+      line-height: 1.35;
+      letter-spacing: -.035em;
+    }
+    .section-subtitle { margin: 5px 0 0; color: var(--muted); font-size: .94rem; }
+    p { margin-top: 0; }
+    .about-copy { max-width: 760px; margin: 0; font-size: 1.05rem; line-height: 1.95; }
+    .about-copy strong { color: var(--green-800); }
+
+    /* 관심사 */
+    .interest-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+    .interest-item {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      min-height: 110px;
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: var(--green-50);
+    }
+    .interest-icon {
+      display: grid;
+      flex: 0 0 52px;
+      width: 52px;
+      height: 52px;
+      place-items: center;
+      border-radius: 16px;
+      background: var(--white);
+      font-size: 1.55rem;
+      box-shadow: 0 4px 14px rgba(24, 63, 48, .06);
+    }
+    .interest-item h3 { margin: 0; color: var(--green-950); font-size: 1.08rem; }
+    .interest-item p { margin: 4px 0 0; color: var(--muted); font-size: .9rem; }
+
+    /* 주요 활동 */
+    .activity-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+    .activity-card {
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: #fff;
+    }
+    .activity-card h3 {
+      margin: 0 0 15px;
+      color: var(--green-800);
+      font-size: 1rem;
+    }
+    .activity-card ul { margin: 0; padding-left: 1.15rem; }
+    .activity-card li { margin: 8px 0; padding-left: 2px; font-size: .95rem; }
+    .activity-card li::marker { color: #79a88a; }
+
+    /* 개별 프로젝트 */
+    .project-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+    .project-item {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      min-height: 220px;
+      padding: 25px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: linear-gradient(145deg, #f7faf6, #fff);
+      transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+    }
+    .project-item:hover {
+      transform: translateY(-3px);
+      border-color: #b7d2bd;
+      box-shadow: var(--shadow);
+    }
+    .project-label {
+      display: inline-block;
+      margin-bottom: 17px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: var(--green-100);
+      color: var(--green-800);
+      font-size: .76rem;
+      font-weight: 750;
+    }
+    .project-item h3 { margin: 0 0 9px; color: var(--green-950); font-size: 1.15rem; }
+    .project-item p { margin: 0 0 22px; color: var(--muted); font-size: .93rem; }
+    .project-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: auto;
+      color: var(--green-800);
+      font-size: .92rem;
+      font-weight: 750;
+      text-decoration: none;
+    }
+    .project-link::after { content: "↗"; font-size: 1.1rem; transition: transform .2s ease; }
+    .project-link:hover::after { transform: translate(3px, -2px); }
+
+    /* SECTION 04: 연락처 및 제작 정보 */
+    #site-footer {
+      padding: 0 0 28px;
+    }
+    .footer-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      padding: 28px clamp(24px, 4.5vw, 42px);
+      border-radius: var(--radius);
+      background: var(--green-950);
+      color: #eaf3eb;
+    }
+    #contact h2 { color: #fff; font-size: 1.2rem; }
+    #contact p { margin: 8px 0 0; color: #c9dfcf; font-size: .94rem; }
+    #contact a { color: #fff; text-decoration-thickness: 1px; text-underline-offset: 4px; }
+    .copyright { margin: 0; color: #bfd4c5; font-size: .82rem; text-align: right; }
+
+    @media (max-width: 760px) {
+      .page-shell { width: min(100% - 32px, 620px); }
+      #site-header { padding: 62px 0 58px; }
+      #site-navigation .page-shell { align-items: flex-start; flex-direction: column; gap: 6px; padding-top: 12px; padding-bottom: 12px; }
+      #site-navigation ul { justify-content: flex-start; gap: 2px; }
+      #site-navigation a:not(.nav-brand) { padding: 7px 10px; font-size: .85rem; }
+      main { padding: 30px 0 48px; }
+      .activity-grid { grid-template-columns: 1fr; }
+      .activity-card { padding: 20px; }
+      .footer-card { align-items: flex-start; flex-direction: column; gap: 20px; }
+      .copyright { text-align: left; }
+    }
+    @media (max-width: 480px) {
+      .page-shell { width: calc(100% - 28px); }
+      #site-header { padding: 50px 0 48px; }
+      .hero-intro { margin-top: 18px; }
+      .hero-tags { margin-top: 22px; }
+      #site-navigation .page-shell { gap: 8px; }
+      #site-navigation ul { display: grid; grid-template-columns: repeat(3, auto); justify-content: start; }
+      .section-card { padding: 22px 18px; border-radius: 18px; }
+      .section-heading { gap: 11px; margin-bottom: 20px; }
+      .section-number { flex-basis: 36px; width: 36px; height: 36px; border-radius: 12px; }
+      .interest-list, .project-list { grid-template-columns: 1fr; }
+      .interest-item { min-height: 94px; padding: 17px; }
+      .project-item { min-height: 205px; padding: 21px; }
+      .footer-card { padding: 24px 20px; border-radius: 18px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; }
     }
   </style>
 </head>
 <body>
-  <header>
-    <div class="container nav">
-      <a class="brand" href="#home">권민재의 페이지</a>
-      <nav aria-label="주요 메뉴">
-        <a href="#about">소개</a>
-        <a href="#activities">주요 활동</a>
-        <a href="#projects">개별 프로젝트</a>
-      </nav>
+  <!-- SECTION 01: 상단 소개 영역 -->
+  <header id="site-header">
+    <div class="page-shell">
+      <p class="eyebrow">MY PERSONAL PAGE</p>
+      <h1>안녕하세요,<br>권민재입니다.</h1>
+      <p class="hero-intro">
+        공주대학교 환경교육과 25학번,<br>
+        늘 푸른 마음으로 끊임없이 배우고 성장하는 예비 교사 권민재입니다.
+      </p>
+      <div class="hero-tags" aria-label="나를 소개하는 키워드">
+        <span class="hero-tag">환경교육</span>
+        <span class="hero-tag">배움과 성장</span>
+        <span class="hero-tag">예비 교사</span>
+      </div>
     </div>
   </header>
 
-  <main>
-    <section class="hero" id="home">
-      <div class="container">
-        <div class="hero-card">
-          <span class="eyebrow">ABOUT ME · 2025</span>
-          <h1>안녕하세요,<br>권민재입니다.</h1>
-          <p>공주대학교 환경교육과 25학번, 늘 푸른 마음으로 끊임없이 배우고 성장하는 예비 교사 권민재입니다.</p>
-          <a class="hero-email" href="mailto:math3019@naver.com">✉ math3019@naver.com</a>
+  <!-- SECTION 02: 본문 이동 메뉴 -->
+  <nav id="site-navigation" aria-label="주요 메뉴">
+    <div class="page-shell">
+      <a class="nav-brand" href="#site-header">권민재의 페이지</a>
+      <ul>
+        <li><a href="#about">소개</a></li>
+        <li><a href="#interests">관심사</a></li>
+        <li><a href="#activities">주요 활동</a></li>
+        <li><a href="#projects">프로젝트</a></li>
+        <li><a href="#contact">연락처</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- SECTION 03: 주요 본문 -->
+  <main id="main-content" class="page-shell">
+    <!-- SECTION 03-1: 자기소개 -->
+    <section id="about" class="content-section section-card">
+      <div class="section-heading">
+        <span class="section-number" aria-hidden="true">01</span>
+        <div>
+          <h2>소개</h2>
+          <p class="section-subtitle">저를 간단히 소개합니다.</p>
         </div>
       </div>
+      <p class="about-copy">
+        안녕하세요. <strong>공주대학교 환경교육과 25학번</strong> 권민재입니다.
+        늘 푸른 마음으로 새로운 것을 배우고 경험하며, 조금씩 성장하는 사람이 되고자 합니다.
+        앞으로도 배움을 바탕으로 주변에 긍정적인 영향을 주는 예비 교사가 되겠습니다.
+      </p>
     </section>
 
-    <section id="about">
-      <div class="container">
-        <div class="section-heading">
-          <span class="kicker">About</span>
-          <h2>저를 소개합니다</h2>
-        </div>
-        <div class="intro-grid">
-          <article class="panel">
-            <h3>🌱 배우고 성장하는 예비 교사</h3>
-            <p>환경과 교육에 대해 꾸준히 배우며, 주변 사람들과 함께 성장하는 사람이 되고 싶습니다. 작은 경험도 배움의 기회로 삼으려 합니다.</p>
-          </article>
-          <article class="panel">
-            <h3>제가 좋아하는 것</h3>
-            <p>일상에 즐거움과 영감을 주는 관심사입니다.</p>
-            <div class="interest-list">
-              <span class="tag">🎵 태연</span>
-              <span class="tag">📚 도서관</span>
-            </div>
-          </article>
+    <!-- SECTION 03-2: 관심사 -->
+    <section id="interests" class="content-section section-card">
+      <div class="section-heading">
+        <span class="section-number" aria-hidden="true">02</span>
+        <div>
+          <h2>관심사</h2>
+          <p class="section-subtitle">제가 좋아하고 관심을 두는 것들입니다.</p>
         </div>
       </div>
-    </section>
-
-    <section id="activities">
-      <div class="container">
-        <div class="section-heading">
-          <span class="kicker">Activities</span>
-          <h2>주요 활동</h2>
-        </div>
-        <div class="activity-grid">
-          <article class="activity-card">
-            <div class="activity-icon" aria-hidden="true">🎓</div>
-            <h3>학과 활동</h3>
-            <ul>
-              <li>환경교육과 복지부 부장</li>
-            </ul>
-          </article>
-          <article class="activity-card">
-            <div class="activity-icon" aria-hidden="true">🤝</div>
-            <h3>동아리 활동</h3>
-            <ul>
-              <li>늘푸른 동아리 부회장</li>
-              <li>DIM 동아리 회원</li>
-              <li>Burning MIC 회원</li>
-            </ul>
-          </article>
-          <article class="activity-card">
-            <div class="activity-icon" aria-hidden="true">💬</div>
-            <h3>기타 활동</h3>
-            <ul>
-              <li>공주대학교 13기 또래상담자</li>
-            </ul>
-          </article>
-        </div>
-      </div>
-    </section>
-
-    <section id="projects">
-      <div class="container">
-        <div class="section-heading">
-          <span class="kicker">Projects</span>
-          <h2>개별 프로젝트</h2>
-        </div>
-        <a class="project-card" href="todo-app.html">
+      <div class="interest-list">
+        <article class="interest-item">
+          <span class="interest-icon" aria-hidden="true">♫</span>
           <div>
-            <h3>오늘의 할 일 관리</h3>
-            <p>할 일을 기록하고 하루의 계획을 정리하는 프로젝트</p>
+            <h3>태연</h3>
+            <p>좋아하는 아티스트</p>
           </div>
-          <span class="project-arrow" aria-hidden="true">↗</span>
-        </a>
+        </article>
+        <article class="interest-item">
+          <span class="interest-icon" aria-hidden="true">📚</span>
+          <div>
+            <h3>도서관</h3>
+            <p>책과 지식을 만나는 공간</p>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- SECTION 03-3: 주요 활동 -->
+    <section id="activities" class="content-section section-card">
+      <div class="section-heading">
+        <span class="section-number" aria-hidden="true">03</span>
+        <div>
+          <h2>주요 활동</h2>
+          <p class="section-subtitle">학교와 다양한 공동체에서 활동하고 있습니다.</p>
+        </div>
+      </div>
+      <div class="activity-grid">
+        <article class="activity-card" id="department-activities">
+          <h3>학과 활동</h3>
+          <ul>
+            <li>환경교육과 복지부 부장</li>
+          </ul>
+        </article>
+        <article class="activity-card" id="club-activities">
+          <h3>동아리 활동</h3>
+          <ul>
+            <li>늘푸른 동아리 부회장</li>
+            <li>DIM 동아리 회원</li>
+            <li>Burning MIC 회원</li>
+          </ul>
+        </article>
+        <article class="activity-card" id="other-activities">
+          <h3>기타 활동</h3>
+          <ul>
+            <li>공주대학교 13기 또래상담자</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <!-- SECTION 03-4: 개별 프로젝트 -->
+    <section id="projects" class="content-section section-card">
+      <div class="section-heading">
+        <span class="section-number" aria-hidden="true">04</span>
+        <div>
+          <h2>개별 프로젝트</h2>
+          <p class="section-subtitle">직접 만든 프로젝트를 확인할 수 있습니다.</p>
+        </div>
+      </div>
+      <div class="project-list">
+        <article class="project-item" id="project-todo">
+          <span class="project-label">개인 프로젝트</span>
+          <h3>오늘의 할 일 관리</h3>
+          <p>하루의 할 일을 정리하고 관리할 수 있도록 만든 프로젝트입니다.</p>
+          <a class="project-link" href="todo-app.html">프로젝트 결과물 보기</a>
+        </article>
       </div>
     </section>
   </main>
 
-  <footer>
-    <div class="container">© 2026 권민재 · 늘 푸른 마음으로 배우고 성장하기</div>
+  <!-- SECTION 04: 연락처 및 제작 정보 -->
+  <footer id="site-footer">
+    <div class="page-shell">
+      <div class="footer-card">
+        <section id="contact">
+          <h2>연락처</h2>
+          <p>이메일 <span aria-hidden="true">·</span>
+            <a href="mailto:math3019@naver.com">math3019@naver.com</a>
+          </p>
+        </section>
+        <p class="copyright">© 2026 권민재. 개인 홈페이지</p>
+      </div>
+    </div>
   </footer>
 </body>
 </html>
