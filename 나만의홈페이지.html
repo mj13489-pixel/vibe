@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="공주대학교 환경교육과 권민재의 개인 홈페이지입니다.">
+  <title>권민재 | 개인 홈페이지</title>
+  <style>
+    :root {
+      --green: #2f6b4f;
+      --green-dark: #214d39;
+      --green-light: #eaf3ec;
+      --cream: #f8f8f2;
+      --text: #26332c;
+      --muted: #69776e;
+      --white: #ffffff;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: "Pretendard", "Noto Sans KR", "Malgun Gothic", sans-serif;
+      color: var(--text);
+      background: var(--cream);
+      line-height: 1.7;
+    }
+    a { color: inherit; }
+    .container { width: min(1000px, calc(100% - 40px)); margin: 0 auto; }
+
+    header {
+      background: rgba(248, 248, 242, 0.94);
+      border-bottom: 1px solid #e4e9e1;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      backdrop-filter: blur(10px);
+    }
+    .nav {
+      min-height: 68px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+    .brand {
+      text-decoration: none;
+      font-weight: 800;
+      color: var(--green-dark);
+      letter-spacing: -0.04em;
+      font-size: 1.15rem;
+    }
+    nav { display: flex; gap: 22px; flex-wrap: wrap; }
+    nav a {
+      text-decoration: none;
+      color: var(--muted);
+      font-size: 0.92rem;
+      font-weight: 600;
+    }
+    nav a:hover { color: var(--green); }
+
+    .hero { padding: 76px 0 58px; }
+    .hero-card {
+      position: relative;
+      overflow: hidden;
+      border-radius: 28px;
+      padding: clamp(30px, 6vw, 68px);
+      color: var(--white);
+      background: linear-gradient(125deg, #28563f, #477c5c 65%, #7da47b);
+      box-shadow: 0 18px 45px rgba(40, 86, 63, 0.15);
+    }
+    .hero-card::after {
+      content: "✳";
+      position: absolute;
+      right: 5%;
+      top: -50px;
+      font-size: clamp(150px, 25vw, 300px);
+      line-height: 1;
+      color: rgba(255,255,255,0.09);
+      pointer-events: none;
+    }
+    .eyebrow {
+      display: inline-block;
+      padding: 5px 12px;
+      border: 1px solid rgba(255,255,255,0.45);
+      border-radius: 999px;
+      font-size: 0.82rem;
+      letter-spacing: 0.04em;
+      margin-bottom: 20px;
+    }
+    h1 {
+      font-size: clamp(2.2rem, 6vw, 4.2rem);
+      line-height: 1.2;
+      letter-spacing: -0.055em;
+      margin: 0 0 20px;
+    }
+    .hero p {
+      max-width: 660px;
+      font-size: clamp(1rem, 2vw, 1.18rem);
+      margin: 0;
+      color: rgba(255,255,255,0.91);
+    }
+    .hero-email { display: inline-block; margin-top: 25px; color: #fff; font-weight: 650; text-underline-offset: 4px; }
+
+    section { padding: 32px 0 42px; }
+    .section-heading { margin-bottom: 22px; }
+    .section-heading .kicker {
+      color: var(--green);
+      text-transform: uppercase;
+      font-size: 0.76rem;
+      letter-spacing: 0.15em;
+      font-weight: 800;
+    }
+    h2 {
+      margin: 3px 0 0;
+      font-size: clamp(1.55rem, 3vw, 2rem);
+      letter-spacing: -0.04em;
+    }
+    .intro-grid { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 20px; }
+    .panel {
+      background: var(--white);
+      border: 1px solid #e7ebe4;
+      border-radius: 20px;
+      padding: 26px;
+      box-shadow: 0 8px 24px rgba(38, 51, 44, 0.035);
+    }
+    .panel h3 { margin: 0 0 12px; font-size: 1.08rem; }
+    .panel p { margin: 0; color: var(--muted); }
+    .interest-list { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 15px; }
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 8px 14px;
+      background: var(--green-light);
+      color: var(--green-dark);
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 0.92rem;
+    }
+    .activity-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .activity-card {
+      background: var(--white);
+      border: 1px solid #e7ebe4;
+      border-radius: 20px;
+      padding: 24px;
+    }
+    .activity-icon {
+      width: 42px; height: 42px;
+      display: grid; place-items: center;
+      background: var(--green-light);
+      border-radius: 13px;
+      font-size: 1.25rem;
+      margin-bottom: 15px;
+    }
+    .activity-card h3 { margin: 0 0 12px; font-size: 1.08rem; }
+    .activity-card ul { padding-left: 19px; margin: 0; color: var(--muted); }
+    .activity-card li + li { margin-top: 7px; }
+    .project-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 24px;
+      background: var(--white);
+      border: 1px solid #e7ebe4;
+      border-radius: 20px;
+      text-decoration: none;
+      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+    }
+    .project-card:hover {
+      transform: translateY(-3px);
+      border-color: #b6cfba;
+      box-shadow: 0 12px 28px rgba(38, 51, 44, 0.08);
+    }
+    .project-card h3 { margin: 0 0 5px; }
+    .project-card p { margin: 0; color: var(--muted); font-size: 0.94rem; }
+    .project-arrow {
+      flex: 0 0 42px;
+      width: 42px; height: 42px;
+      display: grid; place-items: center;
+      background: var(--green);
+      color: white;
+      border-radius: 50%;
+      font-size: 1.2rem;
+    }
+    footer {
+      margin-top: 30px;
+      padding: 28px 0;
+      border-top: 1px solid #e4e9e1;
+      color: var(--muted);
+      font-size: 0.88rem;
+      text-align: center;
+    }
+
+    @media (max-width: 720px) {
+      .nav { padding: 14px 0; align-items: flex-start; flex-direction: column; gap: 8px; }
+      nav { gap: 14px; }
+      .hero { padding-top: 30px; }
+      .intro-grid, .activity-grid { grid-template-columns: 1fr; }
+      .hero-card { border-radius: 22px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container nav">
+      <a class="brand" href="#home">권민재의 페이지</a>
+      <nav aria-label="주요 메뉴">
+        <a href="#about">소개</a>
+        <a href="#activities">주요 활동</a>
+        <a href="#projects">개별 프로젝트</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero" id="home">
+      <div class="container">
+        <div class="hero-card">
+          <span class="eyebrow">ABOUT ME · 2025</span>
+          <h1>안녕하세요,<br>권민재입니다.</h1>
+          <p>공주대학교 환경교육과 25학번, 늘 푸른 마음으로 끊임없이 배우고 성장하는 예비 교사 권민재입니다.</p>
+          <a class="hero-email" href="mailto:math3019@naver.com">✉ math3019@naver.com</a>
+        </div>
+      </div>
+    </section>
+
+    <section id="about">
+      <div class="container">
+        <div class="section-heading">
+          <span class="kicker">About</span>
+          <h2>저를 소개합니다</h2>
+        </div>
+        <div class="intro-grid">
+          <article class="panel">
+            <h3>🌱 배우고 성장하는 예비 교사</h3>
+            <p>환경과 교육에 대해 꾸준히 배우며, 주변 사람들과 함께 성장하는 사람이 되고 싶습니다. 작은 경험도 배움의 기회로 삼으려 합니다.</p>
+          </article>
+          <article class="panel">
+            <h3>제가 좋아하는 것</h3>
+            <p>일상에 즐거움과 영감을 주는 관심사입니다.</p>
+            <div class="interest-list">
+              <span class="tag">🎵 태연</span>
+              <span class="tag">📚 도서관</span>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="activities">
+      <div class="container">
+        <div class="section-heading">
+          <span class="kicker">Activities</span>
+          <h2>주요 활동</h2>
+        </div>
+        <div class="activity-grid">
+          <article class="activity-card">
+            <div class="activity-icon" aria-hidden="true">🎓</div>
+            <h3>학과 활동</h3>
+            <ul>
+              <li>환경교육과 복지부 부장</li>
+            </ul>
+          </article>
+          <article class="activity-card">
+            <div class="activity-icon" aria-hidden="true">🤝</div>
+            <h3>동아리 활동</h3>
+            <ul>
+              <li>늘푸른 동아리 부회장</li>
+              <li>DIM 동아리 회원</li>
+              <li>Burning MIC 회원</li>
+            </ul>
+          </article>
+          <article class="activity-card">
+            <div class="activity-icon" aria-hidden="true">💬</div>
+            <h3>기타 활동</h3>
+            <ul>
+              <li>공주대학교 13기 또래상담자</li>
+            </ul>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="projects">
+      <div class="container">
+        <div class="section-heading">
+          <span class="kicker">Projects</span>
+          <h2>개별 프로젝트</h2>
+        </div>
+        <a class="project-card" href="todo-app.html">
+          <div>
+            <h3>오늘의 할 일 관리</h3>
+            <p>할 일을 기록하고 하루의 계획을 정리하는 프로젝트</p>
+          </div>
+          <span class="project-arrow" aria-hidden="true">↗</span>
+        </a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container">© 2026 권민재 · 늘 푸른 마음으로 배우고 성장하기</div>
+  </footer>
+</body>
+</html>
