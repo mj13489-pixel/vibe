@@ -101,6 +101,12 @@
       color: #f1f7f1;
       font-size: .86rem;
       background: rgba(255,255,255,.07);
+      text-decoration: none;
+      transition: background .2s ease, border-color .2s ease;
+    }
+    a.hero-tag:hover {
+      background: rgba(255,255,255,.18);
+      border-color: rgba(255,255,255,.4);
     }
 
     /* SECTION 02: 본문 이동 메뉴 */
@@ -191,17 +197,30 @@
     .about-copy { max-width: 760px; margin: 0; font-size: 1.05rem; line-height: 1.95; }
     .about-copy strong { color: var(--green-800); }
 
-    /* 관심사 */
+    /* 관심사 (링크형 카드 스타일 추가) */
     .interest-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
     .interest-item {
       display: flex;
       align-items: center;
+      justify-content: space-between;
       gap: 16px;
       min-height: 110px;
       padding: 22px;
       border: 1px solid var(--line);
       border-radius: 18px;
       background: var(--green-50);
+      text-decoration: none;
+      transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+    }
+    .interest-item:hover {
+      transform: translateY(-3px);
+      border-color: #b7d2bd;
+      box-shadow: var(--shadow);
+    }
+    .interest-content {
+      display: flex;
+      align-items: center;
+      gap: 16px;
     }
     .interest-icon {
       display: grid;
@@ -216,6 +235,17 @@
     }
     .interest-item h3 { margin: 0; color: var(--green-950); font-size: 1.08rem; }
     .interest-item p { margin: 4px 0 0; color: var(--muted); font-size: .9rem; }
+    .interest-arrow {
+      color: var(--green-800);
+      font-size: 1.2rem;
+      font-weight: bold;
+      opacity: 0.6;
+      transition: transform .2s ease, opacity .2s ease;
+    }
+    .interest-item:hover .interest-arrow {
+      transform: translate(2px, -2px);
+      opacity: 1;
+    }
 
     /* 주요 활동 */
     .activity-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
@@ -318,7 +348,8 @@
       .section-card { padding: 22px 18px; border-radius: 18px; }
       .section-heading { gap: 11px; margin-bottom: 20px; }
       .section-number { flex-basis: 36px; width: 36px; height: 36px; border-radius: 12px; }
-      .interest-list, .project-list { grid-template-columns: 1fr; }
+      .interest-list { grid-template-columns: 1fr; }
+      .project-list { grid-template-columns: 1fr; }
       .interest-item { min-height: 94px; padding: 17px; }
       .project-item { min-height: 205px; padding: 21px; }
       .footer-card { padding: 24px 20px; border-radius: 18px; }
@@ -343,6 +374,7 @@
         <span class="hero-tag">환경교육</span>
         <span class="hero-tag">배움과 성장</span>
         <span class="hero-tag">예비 교사</span>
+        <a href="https://https://blog.naver.com/25edu1219/224436273194" class="hero-tag" target="_blank">개인 블로그 ↗</a>
       </div>
     </div>
   </header>
@@ -379,7 +411,7 @@
       </p>
     </section>
 
-    <!-- SECTION 03-2: 관심사 -->
+    <!-- SECTION 03-2: 관심사 (태연 유튜브 / 도서관 블로그 링크 적용) -->
     <section id="interests" class="content-section section-card">
       <div class="section-heading">
         <span class="section-number" aria-hidden="true">02</span>
@@ -389,26 +421,36 @@
         </div>
       </div>
       <div class="interest-list">
-        <article class="interest-item">
-          <span class="interest-icon" aria-hidden="true">♫</span>
-          <div>
-            <h3>태연</h3>
-            <p>좋아하는 아티스트</p>
+        <!-- 1. 태연 카드 (유튜브 링크) -->
+        <a class="interest-item" href="https://youtu.be/5ch94AaPZRQ?si=TeA80pwuxG3yWNGN" target="_blank">
+          <div class="interest-content">
+            <span class="interest-icon" aria-hidden="true">♫</span>
+            <div>
+              <h3>태연</h3>
+              <p>좋아하는 아티스트</p>
+            </div>
           </div>
-        </article>
-        <article class="interest-item">
-          <span class="interest-icon" aria-hidden="true">📚</span>
-          <div>
-            <h3>도서관</h3>
-            <p>책과 지식을 만나는 공간</p>
+          <span class="interest-arrow" aria-hidden="true">↗</span>
+        </a>
+
+        <!-- 2. 도서관 카드 (개인 블로그 링크) -->
+        <a class="interest-item" href="https://blog.naver.com/25edu1219/224436273194" target="_blank">
+          <div class="interest-content">
+            <span class="interest-icon" aria-hidden="true">📚</span>
+            <div>
+              <h3>도서관</h3>
+              <p>책과 지식을 만나는 공간</p>
+            </div>
           </div>
-        </article>
+          <span class="interest-arrow" aria-hidden="true">↗</span>
+        </a>
       </div>
     </section>
 
     <!-- SECTION 03-3: 주요 활동 -->
     <section id="activities" class="content-section section-card">
       <div class="section-heading">
+        <span class="system-number" aria-hidden="true">03</span>
         <span class="section-number" aria-hidden="true">03</span>
         <div>
           <h2>주요 활동</h2>
@@ -473,6 +515,9 @@
           <h2>연락처</h2>
           <p>이메일 <span aria-hidden="true">·</span>
             <a href="mailto:math3019@naver.com">math3019@naver.com</a>
+          </p>
+          <p style="margin-top: 6px;">블로그 <span aria-hidden="true">·</span>
+            <a href="https://https://blog.naver.com/25edu1219/224436273194" target="_blank">개인 블로그 방문하기 ↗</a>
           </p>
         </section>
         <p class="copyright">© 2026 권민재. 개인 홈페이지</p>
