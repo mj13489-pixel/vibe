@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <!-- 모바일 기기에서 올바른 비율과 터치 반응을 위한 뷰포트 설정 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>전자 도장 생성기</title>
+    
+    <!-- Tailwind CSS (스타일링 프레임워크) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: 저작권 없는 한글 폰트 불러오기 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=East+Sea+Dokdo&family=Gowun+Dodum&family=Nanum+Myeongjo:wght@700&family=Nanum+Pen+Script&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Gowun Dodum', sans-serif;
+            background-color: #f3f4f6;
+        }
+        
+        /* 폰트 프리뷰용 클래스 */
+        .font-myeongjo { font-family: 'Nanum Myeongjo', serif; }
+        .font-dokdo { font-family: 'East Sea Dokdo', cursive; }
+        .font-pen { font-family: 'Nanum Pen Script', cursive; }
+        .font-dodum { font-family: 'Gowun Dodum', sans-serif; }
+        
+        /* 투명 배경임을 보여주기 위한 체크무늬 패턴 (포토샵 배경과 유사) */
+        .bg-transparent-pattern {
+            background-image: 
+                linear-gradient(45deg, #e5e7eb 25%, transparent 25%), 
+                linear-gradient(-45deg, #e5e7eb 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #e5e7eb 75%), 
+                linear-gradient(-45deg, transparent 75%, #e5e7eb 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+            background-color: white;
+        }
+
+        /* 탭 하이라이트 제거 (모바일 터치 시 깜빡임 방지) */
+        * {
+            -webkit-tap-highlight-color: transparent;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4 md:p-8">
+
+    <!-- 메인 컨테이너: 모바일은 세로(flex-col), 데스크탑은 가로(md:flex-row) 배치 -->
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-4xl flex flex-col md:flex-row overflow-hidden">
+        
+        <!-- 왼쪽(또는 상단): 입력 및 제어 패널 -->
+        <div class="w-full md:w-1/2 p-6 md:p-8 bg-gray-50 flex flex-col gap-6">
+            <div class="text-center md:text-left">
+                <h1 class="text-2xl md:text-3xl font-bold text-gray-800 tracking-tight">전자 도장 생성기</h1>
+                <p class="text-sm text-gray-500 mt-2">이름을 입력하면 '인'자가 붙어 자동 생성됩니다.</p>
+            </div>
+
+            <!-- 이름 입력 필드 -->
+            <div class="flex flex-col gap-2">
+                <label for="nameInput" class="text-sm font-semibold text-gray-700">이름 (최대 3글자)</label>
+                <!-- 터치 타겟 크기를 확보하기 위해 py-3(44px 이상) 적용 -->
+                <input type="text" id="nameInput" placeholder="홍길동" maxlength="3" value="홍길동"
+                    class="px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-all text-lg shadow-sm text-center md:text-left">
+            </div>
+
+            <!-- 폰트 선택 드롭다운 -->
+            <div class="flex flex-col gap-2">
+                <label for="fontSelect" class="text-sm font-semibold text-gray-700">글씨체 선택</label>
+                <select id="fontSelect" class="px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-red-500 outline-none text-lg shadow-sm bg-white cursor-pointer">
+                    <option value="Nanum Myeongjo" class="font-myeongjo">나눔명조 (기본)</option>
+                    <option value="East Sea Dokdo" class="font-dokdo">독도체 (개성있는)</option>
+                    <option value="Nanum Pen Script" class="font-pen">나눔필기체 (부드러운)</option>
+                    <option value="Gowun Dodum" class="font-dodum">고운돋움 (깔끔한)</option>
+                </select>
+            </div>
+
+            <!-- 도장 모양 선택 (라디오 버튼을 버튼 스타일로 커스텀) -->
+            <div class="flex flex-col gap-2">
+                <label class="text-sm font-semibold text-gray-700">테두리 모양</label>
+                <div class="flex gap-3">
+                    <label class="flex-1 cursor-pointer relative">
+                        <input type="radio" name="shape" value="circle" checked class="peer sr-only">
+                        <div class="px-4 py-3 text-center rounded-xl border-2 border-gray-200 peer-checked:border-red-600 peer-checked:bg-red-50 text-gray-600 peer-checked:text-red-700 font-bold transition-all shadow-sm">
+                            원형
+                        </div>
+                    </label>
+                    <label class="flex-1 cursor-pointer relative">
+                        <input type="radio" name="shape" value="square" class="peer sr-only">
+                        <div class="px-4 py-3 text-center rounded-xl border-2 border-gray-200 peer-checked:border-red-600 peer-checked:bg-red-50 text-gray-600 peer-checked:text-red-700 font-bold transition-all shadow-sm">
+                            사각형
+                        </div>
+                    </label>
+                </div>
+            </div>
+            
+            <!-- 모바일에서는 다운로드 버튼이 하단에 고정되도록 여백 추가 -->
+            <div class="hidden md:block flex-grow"></div>
+        </div>
+
+        <!-- 오른쪽(또는 하단): 캔버스 미리보기 및 다운로드 패널 -->
+        <div class="w-full md:w-1/2 p-6 md:p-8 flex flex-col items-center justify-between bg-white border-t md:border-t-0 md:border-l border-gray-200">
+            
+            <div class="w-full flex flex-col items-center">
+                <h2 class="text-xs font-bold text-gray-400 mb-4 uppercase tracking-widest bg-gray-100 px-3 py-1 rounded-full">미리보기</h2>
+                
+                <!-- 투명도를 확인할 수 있는 캔버스 래퍼 -->
+                <div class="bg-transparent-pattern rounded-2xl p-6 md:p-8 border border-gray-200 shadow-inner flex items-center justify-center w-full max-w-[280px] aspect-square relative group">
+                    <!-- 실제 다운로드되는 캔버스 (300x300 고해상도) -->
+                    <canvas id="stampCanvas" width="300" height="300" class="w-full h-full object-contain drop-shadow-md transition-transform transform group-hover:scale-105"></canvas>
+                </div>
+                
+                <p class="mt-4 text-xs md:text-sm text-gray-400 text-center flex items-center gap-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    투명 배경이 적용되어 문서 위 글자와 겹쳐 사용할 수 있습니다.
+                </p>
+            </div>
+
+            <!-- 다운로드 버튼 (터치하기 쉽게 큼직하게) -->
+            <button id="downloadBtn" class="mt-8 w-full bg-[#CC0000] hover:bg-[#aa0000] active:bg-[#880000] text-white font-bold py-4 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all flex justify-center items-center gap-2 transform active:scale-95 text-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                투명 PNG 다운로드
+            </button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const canvas = document.getElementById('stampCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            const nameInput = document.getElementById('nameInput');
+            const fontSelect = document.getElementById('fontSelect');
+            const shapeRadios = document.querySelectorAll('input[name="shape"]');
+            const downloadBtn = document.getElementById('downloadBtn');
+
+            // 실제 도장에 가까운 진한 빨간색
+            const STAMP_COLOR = '#CC0000';
+
+            // 폰트가 완전히 로드된 후 그리기
+            document.fonts.ready.then(() => {
+                drawStamp();
+            });
+
+            // 입력/선택 변경 시 실시간 업데이트
+            nameInput.addEventListener('input', drawStamp);
+            fontSelect.addEventListener('change', drawStamp);
+            shapeRadios.forEach(radio => radio.addEventListener('change', drawStamp));
+
+            function drawStamp() {
+                // 1. 캔버스 초기화 (완전 투명)
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                // 2. 텍스트 로직 처리 (무조건 '인' 포함 4글자로 맞춤)
+                let rawName = nameInput.value.trim();
+                if (rawName.length === 0) rawName = '홍길동';
+                
+                // 이름이 짧으면 공백 추가, 3글자까지만 자른 후 '인' 추가
+                let paddedName = rawName.padEnd(3, ' ');
+                let stampText = paddedName.substring(0, 3) + '인';
+
+                const fontName = fontSelect.value;
+                const shape = document.querySelector('input[name="shape"]:checked').value;
+
+                // 3. 테두리 외곽선 그리기
+                ctx.strokeStyle = STAMP_COLOR;
+                ctx.lineWidth = 14; // 테두리 두께
+                ctx.lineJoin = 'round';
+                
+                const padding = 16;
+                const size = canvas.width - (padding * 2);
+                const centerX = canvas.width / 2;
+                const centerY = canvas.height / 2;
+
+                ctx.beginPath();
+                if (shape === 'square') {
+                    // 모서리가 약간 둥근 사각형
+                    const radius = 20;
+                    const x = padding;
+                    const y = padding;
+                    ctx.moveTo(x + radius, y);
+                    ctx.lineTo(x + size - radius, y);
+                    ctx.quadraticCurveTo(x + size, y, x + size, y + radius);
+                    ctx.lineTo(x + size, y + size - radius);
+                    ctx.quadraticCurveTo(x + size, y + size, x + size - radius, y + size);
+                    ctx.lineTo(x + radius, y + size);
+                    ctx.quadraticCurveTo(x, y + size, x, y + size - radius);
+                    ctx.lineTo(x, y + radius);
+                    ctx.quadraticCurveTo(x, y, x + radius, y);
+                } else {
+                    // 원형 테두리
+                    ctx.arc(centerX, centerY, size / 2, 0, Math.PI * 2);
+                }
+                ctx.closePath();
+                ctx.stroke();
+
+                // 4. 텍스트 그리기 (2x2 그리드 배열)
+                ctx.fillStyle = STAMP_COLOR;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                
+                // 폰트별 기본 크기와 세로 정렬(Baseline) 미세 조정
+                let fontSize = 100;
+                let yOffset = 0;
+                
+                switch(fontName) {
+                    case 'East Sea Dokdo': 
+                        fontSize = 130; 
+                        yOffset = -8; 
+                        break;
+                    case 'Nanum Pen Script': 
+                        fontSize = 125; 
+                        yOffset = -2; 
+                        break;
+                    case 'Gowun Dodum': 
+                        fontSize = 95; 
+                        yOffset = 4; 
+                        break;
+                    case 'Nanum Myeongjo':
+                    default:
+                        fontSize = 95;
+                        yOffset = 6;
+                        break;
+                }
+                
+                // 볼드체가 지원되는 폰트는 볼드 처리
+                const fontWeight = (fontName === 'Nanum Myeongjo' || fontName === 'Gowun Dodum') ? 'bold' : 'normal';
+                ctx.font = `${fontWeight} ${fontSize}px '${fontName}', sans-serif`;
+
+                // 4글자 분리
+                const char1 = stampText.charAt(0);
+                const char2 = stampText.charAt(1);
+                const char3 = stampText.charAt(2);
+                const char4 = stampText.charAt(3);
+
+                // 상하좌우 간격
+                const offset = size / 4 + 2; 
+
+                // [ 좌상(1) ] [ 우상(2) ]
+                // [ 좌하(3) ] [ 우하(4) ]
+                ctx.fillText(char1, centerX - offset, centerY - offset + yOffset);
+                ctx.fillText(char2, centerX + offset, centerY - offset + yOffset);
+                ctx.fillText(char3, centerX - offset, centerY + offset + yOffset);
+                ctx.fillText(char4, centerX + offset, centerY + offset + yOffset);
+            }
+
+            // 다운로드 이벤트 처리
+            downloadBtn.addEventListener('click', () => {
+                try {
+                    const dataURL = canvas.toDataURL('image/png');
+                    const fileName = `${nameInput.value || '도장'}_서명도장.png`;
+                    
+                    const link = document.createElement('a');
+                    link.download = fileName;
+                    link.href = dataURL;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                } catch (e) {
+                    console.error('다운로드 중 오류 발생:', e);
+                }
+            });
+            
+            // 혹시 폰트 로딩이 지연될 경우를 대비한 안전 장치
+            setTimeout(drawStamp, 500);
+            setTimeout(drawStamp, 1000);
+        });
+    </script>
+</body>
+</html>
