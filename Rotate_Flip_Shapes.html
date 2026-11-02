@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>도형 돌리고 뒤집기</title>
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Jua&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#F2F6FB;--panel:#fff;--ink:#1D2B4A;--mute:#586888;--line:#D3DEEC;--grid:#E6EDF6;--axis:#B7C6DB;--blue:#3566E8;--blue-ink:#fff;--sun:#FFC83D;--sun-ink:#4d3800;--ok:#128A5E;--bad:#C93B34;--me:#5B86F5;--me-line:#1F3FA8;--me-mark:#fff;--tg:#FFD466;--tg-line:#9A6A00;--tg-mark:#4d3800;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#111A2C;--panel:#1A2540;--ink:#EAF0FF;--mute:#A2B3D3;--line:#2C3B5E;--grid:#24304D;--axis:#3C4D74;--blue:#6C93FF;--blue-ink:#0D1838;--me:#5C86F7;--me-line:#B1C7FF;--ok:#4CD39B;--bad:#FF8A82;--tg:#E8B83A;--tg-line:#FFE29A}}
+:root[data-theme="dark"]{--bg:#111A2C;--panel:#1A2540;--ink:#EAF0FF;--mute:#A2B3D3;--line:#2C3B5E;--grid:#24304D;--axis:#3C4D74;--blue:#6C93FF;--blue-ink:#0D1838;--me:#5C86F7;--me-line:#B1C7FF;--ok:#4CD39B;--bad:#FF8A82;--tg:#E8B83A;--tg-line:#FFE29A}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'Gowun Dodum','Malgun Gothic','Apple SD Gothic Neo',sans-serif;font-size:17px;line-height:1.5}
+button,select{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.wrap{max-width:900px;margin:0 auto;padding:16px 14px 32px}
+header{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:12px}
+h1{font-family:'Jua','Gowun Dodum',sans-serif;font-weight:400;font-size:30px;margin:0}
+.tabs{display:flex;background:var(--panel);border:2px solid var(--line);border-radius:999px;padding:3px}
+.tabs button{border:0;background:none;padding:7px 18px;border-radius:999px;cursor:pointer;font-weight:700}
+.tabs button[aria-selected=true]{background:var(--blue);color:var(--blue-ink)}
+.card{background:var(--panel);border:2px solid var(--line);border-radius:18px;padding:14px;margin-bottom:12px}
+.label{font-weight:700;margin-bottom:8px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:flex;flex-direction:column;align-items:center;gap:2px;width:92px;padding:8px 4px;border:2px solid var(--line);border-radius:14px;background:none;cursor:pointer;font-size:14px}
+.chip svg{width:40px;height:40px;fill:var(--axis)}
+.chip[aria-pressed=true]{border-color:var(--blue);background:color-mix(in srgb,var(--blue) 14%,transparent)}
+.chip[aria-pressed=true] svg{fill:var(--blue)}
+.bar{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;margin-bottom:10px}
+.bar select{padding:6px 10px;border-radius:10px;border:2px solid var(--line);background:var(--panel)}
+.stages{display:grid;grid-template-columns:1fr;gap:10px;justify-items:center}
+.stages.quiz{grid-template-columns:1fr 1fr}
+figure{margin:0;width:100%;max-width:400px;text-align:center}
+figcaption{font-weight:700;margin-top:4px}
+svg.board{width:100%;height:auto;aspect-ratio:1;background:var(--bg);border:2px solid var(--line);border-radius:14px;display:block}
+.grid{stroke:var(--grid);stroke-width:1;fill:none}
+.axis{stroke:var(--axis);stroke-width:1.6;stroke-dasharray:5 5;fill:none}
+.orig polygon{fill:none;stroke:var(--mute);stroke-width:2;stroke-dasharray:6 5}
+.body{stroke-width:3.5;stroke-linejoin:round}
+.f{fill:none;stroke-width:5.5;stroke-linecap:round;stroke-linejoin:round}
+.dot{stroke-width:2.5;fill:var(--sun)}
+.me .body{fill:var(--me);stroke:var(--me-line)}.me .f{stroke:var(--me-mark)}.me .dot{stroke:var(--me-line)}
+.tg .body{fill:var(--tg);stroke:var(--tg-line)}.tg .f{stroke:var(--tg-mark)}.tg .dot{fill:#fff;stroke:var(--tg-line)}
+.pop{animation:pop .5s ease}
+@keyframes pop{40%{transform:scale(1.04)}}
+#status{min-height:3.2em;margin:10px 0;font-weight:700}
+#status.ok{color:var(--ok)}#status.bad{color:var(--bad)}
+.ctrl{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.btn{border:2px solid var(--line);background:var(--panel);border-radius:14px;padding:12px 6px;cursor:pointer;font-weight:700;line-height:1.3}
+.btn b{display:block;font-size:26px;font-weight:400}
+.btn:hover:not(:disabled){border-color:var(--blue)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.main{background:var(--blue);border-color:var(--blue);color:var(--blue-ink)}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:12px}
+.seg{display:flex;gap:6px;align-items:center}
+.seg button{border:2px solid var(--line);background:none;border-radius:10px;padding:5px 12px;cursor:pointer;font-weight:700}
+.seg button[aria-pressed=true]{background:var(--sun);border-color:var(--sun);color:var(--sun-ink)}
+.small{border:2px solid var(--line);background:none;border-radius:12px;padding:8px 14px;cursor:pointer;font-weight:700}
+.spacer{flex:1}
+[hidden]{display:none!important}
+@media (max-width:560px){.ctrl{grid-template-columns:1fr 1fr}h1{font-size:25px}.chip{width:80px}}
+@media (prefers-reduced-motion:reduce){.pop{animation:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>도형 돌리고 뒤집기</h1>
+  <div class="tabs" role="tablist">
+    <button id="tPractice" role="tab" aria-selected="true">연습 모드</button>
+    <button id="tQuiz" role="tab" aria-selected="false">퀴즈 모드</button>
+  </div>
+</header>
+
+<section class="card">
+  <div class="label">도형 고르기</div>
+  <div id="shapes" class="chips"></div>
+</section>
+
+<section class="card">
+  <div id="quizBar" class="bar" hidden>
+    <label>난이도 <select id="level">
+      <option value="easy">쉬움: 돌리기만, 90°씩</option>
+      <option value="mid">보통: 돌리기만, 45°씩</option>
+      <option value="hard">어려움: 뒤집기도 함께</option>
+    </select></label>
+    <span id="score"></span>
+  </div>
+
+  <div id="stages" class="stages">
+    <figure id="figT" hidden><svg id="svgT" class="board tg" role="img" aria-label="목표 도형"></svg><figcaption>목표 모양</figcaption></figure>
+    <figure><svg id="svgM" class="board me" role="img" aria-label="내 도형"></svg><figcaption>내 도형</figcaption></figure>
+  </div>
+
+  <p id="status" aria-live="polite"></p>
+
+  <div class="ctrl">
+    <button class="btn" id="bCW"><b>↻</b>시계 방향 돌리기</button>
+    <button class="btn" id="bCCW"><b>↺</b>반시계 방향 돌리기</button>
+    <button class="btn" id="bFX"><b>↔</b>좌우 뒤집기</button>
+    <button class="btn" id="bFY"><b>↕</b>상하 뒤집기</button>
+  </div>
+
+  <div class="row">
+    <div class="seg" role="group" aria-label="돌리는 각도"><span>돌리는 각도</span>
+      <button data-step="15" aria-pressed="false">15°</button>
+      <button data-step="45" aria-pressed="false">45°</button>
+      <button data-step="90" aria-pressed="true">90°</button>
+    </div>
+    <label id="origWrap"><input type="checkbox" id="origChk" checked> 처음 모양(점선) 보기</label>
+    <span class="spacer"></span>
+    <button class="small" id="bReset">처음으로</button>
+    <button class="small" id="bHint" hidden>힌트</button>
+    <button class="btn main" id="bCheck" hidden style="padding:9px 22px">확인</button>
+    <button class="btn main" id="bNext" hidden style="padding:9px 22px">다음 문제</button>
+  </div>
+</section>
+<p style="color:var(--mute);font-size:15px">점선 가로·세로 줄은 뒤집기의 기준선이에요. 도형 안의 F 글자와 흰 점이 어느 쪽을 보는지 살펴보세요.</p>
+</div>
+
+<script>
+const $=s=>document.querySelector(s);
+const I=[1,0,0,1],FX=[-1,0,0,1],FY=[1,0,0,-1];
+const mul=(A,B)=>[A[0]*B[0]+A[2]*B[1],A[1]*B[0]+A[3]*B[1],A[0]*B[2]+A[2]*B[3],A[1]*B[2]+A[3]*B[3]].map(v=>Math.round(v*1e6)/1e6+0);
+const rot=d=>{const r=d*Math.PI/180;return[Math.cos(r),Math.sin(r),-Math.sin(r),Math.cos(r)]};
+const same=(A,B)=>A.every((v,i)=>Math.abs(v-B[i])<1e-3);
+const reg=(n,s)=>Array.from({length:n},(_,i)=>{const a=(s+360*i/n)*Math.PI/180;return[88*Math.cos(a),88*Math.sin(a)]});
+const center=p=>{const x=p.reduce((s,q)=>s+q[0],0)/p.length,y=p.reduce((s,q)=>s+q[1],0)/p.length;return p.map(q=>[q[0]-x,q[1]-y])};
+const SHAPES=[
+ {name:'정삼각형',pts:reg(3,-90)},
+ {name:'직각삼각형',pts:center([[0,0],[0,110],[135,110]])},
+ {name:'정사각형',pts:reg(4,-135)},
+ {name:'직사각형',pts:[[-80,-48],[80,-48],[80,48],[-80,48]]},
+ {name:'정오각형',pts:reg(5,-90)},
+ {name:'정육각형',pts:reg(6,-90)}
+];
+let shape=SHAPES[0],M=I,T=I,mode='practice',step=90,level='easy',anim=false,solved=false,hint=0,right=0,tries=0,attempt=0;
+const reduced=matchMedia('(prefers-reduced-motion:reduce)').matches;
+
+function markup(s){
+  const pts=s.pts.map(p=>p.map(v=>v.toFixed(1)).join(',')).join(' ');
+  const [x,y]=s.pts[0];
+  return `<polygon class="body" points="${pts}"/><path class="f" d="M-7 15V-15H9M-7 0H5"/><circle class="dot" cx="${(x*.78).toFixed(1)}" cy="${(y*.78).toFixed(1)}" r="6.5"/>`;
+}
+function initSvg(svg,withOrig){
+  let d='';for(let i=-150;i<=150;i+=30)d+=`M${i} -150V150M-150 ${i}H150`;
+  svg.innerHTML=`<path class="grid" d="${d}"/><path class="axis" d="M0 -150V150M-150 0H150"/><g class="orig">${withOrig?`<polygon points="${shape.pts.map(p=>p.join(',')).join(' ')}"/>`:''}</g><g class="cur">${markup(shape)}</g>`;
+  svg.setAttribute('viewBox','-150 -150 300 300');
+}
+const put=(svg,m)=>svg.querySelector('.cur').setAttribute('transform',`matrix(${m.join(' ')} 0 0)`);
+function build(){
+  initSvg($('#svgM'),mode==='practice');initSvg($('#svgT'),false);
+  $('#svgM .orig').style.display=$('#origChk').checked?'':'none';
+  put($('#svgM'),M);put($('#svgT'),T);
+}
+
+function describe(m){
+  const det=m[0]*m[3]-m[1]*m[2],fl=det<0;
+  let th=fl?Math.atan2(-m[1],-m[0]):Math.atan2(m[1],m[0]);
+  const deg=((Math.round(th*180/Math.PI)%360)+360)%360;
+  return{fl,deg};
+}
+const cwText=d=>d===0?'':`시계 방향 ${d}° (반시계 방향 ${360-d}°)`;
+function setStatus(t,c=''){const s=$('#status');s.textContent=t;s.className=c}
+function practiceStatus(){
+  const{fl,deg}=describe(M);
+  if(!fl&&deg===0)return setStatus('처음 모양이에요. 버튼을 눌러 도형을 움직여 보세요.');
+  if(!fl)return setStatus(`처음 모양에서 ${cwText(deg)} 돌린 모양이에요.`);
+  const a=deg?`좌우로 뒤집고 ${cwText(deg)} 돌린 모양이에요.`:'좌우로 뒤집은 모양이에요.';
+  const b=((deg+180)%360);
+  setStatus(`${a} 상하로 뒤집고 ${b?`시계 방향 ${b}° 돌린`:'그대로 둔'} 것과도 같아요.`);
+}
+
+function run(kind,deg){
+  if(anim||solved)return;
+  anim=true;
+  const from=M,op=kind==='rot'?rot(deg):kind==='fx'?FX:FY,to=mul(op,from),t0=performance.now(),dur=reduced?0:420;
+  const fin=()=>{M=to;put($('#svgM'),M);anim=false;mode==='practice'?practiceStatus():setStatus('목표와 똑같아졌다면 “확인”을 눌러요.')};
+  if(!dur)return fin();
+  const f=now=>{
+    let t=Math.min(1,(now-t0)/dur);t=t*t*(3-2*t);
+    const A=kind==='rot'?rot(deg*t):kind==='fx'?[1-2*t,0,0,1]:[1,0,0,1-2*t];
+    put($('#svgM'),mul(A,from));
+    t<1&&now-t0<dur?requestAnimationFrame(f):fin();
+  };
+  requestAnimationFrame(f);
+}
+$('#bCW').onclick=()=>run('rot',step);
+$('#bCCW').onclick=()=>run('rot',-step);
+$('#bFX').onclick=()=>run('fx');
+$('#bFY').onclick=()=>run('fy');
+$('#bReset').onclick=()=>{if(anim)return;M=I;put($('#svgM'),M);solved=false;updateButtons();mode==='practice'?practiceStatus():setStatus('내 도형을 처음 모양으로 되돌렸어요.')};
+$('#origChk').onchange=()=>{$('#svgM .orig').style.display=$('#origChk').checked?'':'none'};
+
+document.querySelectorAll('[data-step]').forEach(b=>b.onclick=()=>setStep(+b.dataset.step));
+function setStep(n){step=n;document.querySelectorAll('[data-step]').forEach(b=>b.setAttribute('aria-pressed',+b.dataset.step===n))}
+
+function newQ(){
+  const hard=level==='hard',unit=level==='easy'?90:45,n=360/unit;
+  const flip=hard&&Math.random()<.55;
+  let k=Math.floor(Math.random()*n);if(!flip&&k===0)k=1;
+  T=mul(rot(k*unit),flip?FX:I);M=I;solved=false;hint=0;attempt=0;
+  setStep(unit);
+  build();updateButtons();
+  setStatus(hard?'오른쪽 도형을 돌리거나 뒤집어서 왼쪽 목표와 똑같이 만들어 보세요.':'오른쪽 도형을 돌려서 왼쪽 목표와 똑같이 만들어 보세요.');
+}
+function updateButtons(){
+  const q=mode==='quiz',noFlip=q&&level!=='hard';
+  $('#bFX').disabled=$('#bFY').disabled=noFlip;
+  $('#bCheck').hidden=!q||solved;$('#bNext').hidden=!q||!solved;$('#bHint').hidden=!q||solved;
+  $('#score').textContent=q?`맞힌 문제 ${right}개, 도전 ${tries}번`:'';
+  $('#origWrap').hidden=q;
+}
+$('#bCheck').onclick=()=>{
+  if(anim)return;
+  tries++;attempt++;
+  if(same(M,T)){
+    right++;solved=true;updateButtons();
+    const s=$('#svgM');s.classList.remove('pop');void s.getBoundingClientRect();s.classList.add('pop');
+    setStatus(attempt===1?'정답이에요! 한 번에 맞혔어요.':'정답이에요! 끝까지 해냈어요.','ok');
+  }else{
+    updateButtons();
+    const a=describe(M),b=describe(T);
+    setStatus(a.fl!==b.fl?'아직 달라요. 목표는 거울에 비친 것처럼 뒤집혀 있어요. 뒤집기 버튼을 써 보세요.':'뒤집힌 상태는 맞아요. 돌린 방향이 달라요. F 글자와 흰 점이 가리키는 쪽을 비교해 보세요.',
+      'bad');
+    if(a.fl===b.fl&&!a.fl)$('#status').textContent='아직 달라요. F 글자와 흰 점이 가리키는 쪽을 목표와 비교해 보세요.';
+  }
+};
+$('#bNext').onclick=newQ;
+$('#bHint').onclick=()=>{
+  const{fl,deg}=describe(T);hint++;
+  if(hint===1)setStatus(fl?'힌트: 이 문제는 뒤집기가 필요해요.':'힌트: 이 문제는 뒤집지 않고 돌리기만 하면 돼요.');
+  else setStatus(`힌트: 처음 모양에서 ${fl?'좌우로 뒤집고, ':''}${deg?cwText(deg)+' 돌리면 목표가 돼요.':'그대로 두면 돼요.'}`);
+};
+$('#level').onchange=e=>{level=e.target.value;newQ()};
+
+function setMode(m){
+  if(anim)return;
+  mode=m;
+  $('#tPractice').setAttribute('aria-selected',m==='practice');$('#tQuiz').setAttribute('aria-selected',m==='quiz');
+  $('#figT').hidden=m!=='quiz';$('#quizBar').hidden=m!=='quiz';
+  $('#stages').classList.toggle('quiz',m==='quiz');
+  $('#svgM').closest('figure').querySelector('figcaption').textContent='내 도형';
+  if(m==='quiz'){newQ()}else{M=I;solved=false;build();updateButtons();practiceStatus()}
+}
+$('#tPractice').onclick=()=>setMode('practice');
+$('#tQuiz').onclick=()=>setMode('quiz');
+
+const box=$('#shapes');
+SHAPES.forEach((s,i)=>{
+  const b=document.createElement('button');b.className='chip';b.setAttribute('aria-pressed',i===0);
+  b.innerHTML=`<svg viewBox="-100 -100 200 200"><polygon points="${s.pts.map(p=>p.join(',')).join(' ')}"/></svg>${s.name}`;
+  b.onclick=()=>{
+    if(anim)return;
+    shape=s;box.querySelectorAll('.chip').forEach(c=>c.setAttribute('aria-pressed',c===b));
+    mode==='quiz'?newQ():(M=I,build(),practiceStatus());
+  };
+  box.appendChild(b);
+});
+build();updateButtons();practiceStatus();
+</script>
+</body>
+</html>

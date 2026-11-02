@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>학생 역량 사전·사후 비교 레이더 차트</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--tx:#1d2330;--mut:#6b7385;--bd:#dfe3ea;--pre:#2563eb;--post:#dc2626;--acc:#1d2330;--accTx:#fff;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#12151c;--card:#1a1f2a;--tx:#e8ebf2;--mut:#98a1b5;--bd:#2c3342;--pre:#5b9bff;--post:#ff6b6b;--acc:#e8ebf2;--accTx:#12151c;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#12151c;--card:#1a1f2a;--tx:#e8ebf2;--mut:#98a1b5;--bd:#2c3342;--pre:#5b9bff;--pre2:#fff;--post:#ff6b6b;--acc:#e8ebf2;--accTx:#12151c;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:"Pretendard","Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.5}
+main{max-width:1060px;margin:0 auto;padding:20px 16px 40px}
+h1{font-size:20px;margin:0 0 4px}
+.sub{color:var(--mut);font-size:13px;margin:0 0 16px}
+.grid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:16px}
+@media(max-width:820px){.grid{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:16px}
+h2{font-size:15px;margin:0 0 10px}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{font-weight:600;font-size:12px;text-align:left;color:var(--mut);padding:4px 4px}
+td{padding:3px 4px}
+input{font:inherit;color:var(--tx);background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:7px 8px;width:100%;min-width:0}
+input[type=number]{width:72px}
+input:focus{outline:2px solid var(--pre);outline-offset:0}
+.pre{color:var(--pre)}.post{color:var(--post)}
+button{font:inherit;cursor:pointer;border-radius:8px;border:1px solid var(--bd);background:var(--card);color:var(--tx);padding:7px 12px}
+button.p{background:var(--acc);color:var(--accTx);border-color:var(--acc)}
+button.x{padding:5px 9px;color:var(--mut)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px}
+.row label{font-size:13px;color:var(--mut);display:flex;gap:6px;align-items:center}
+.lg{display:flex;gap:16px;justify-content:center;font-size:13px;margin:4px 0 8px}
+.lg i{display:inline-block;width:22px;height:0;border-top:3px solid;vertical-align:middle;margin-right:6px}
+canvas{display:block;width:100%;max-width:560px;margin:0 auto;aspect-ratio:1/1}
+#sum{font-size:14px;white-space:pre-wrap;margin:0}
+#msg{font-size:12px;color:var(--mut);min-height:18px;margin-top:6px}
+.right{display:flex;flex-direction:column;gap:16px}
+</style>
+</head>
+<body>
+<main>
+<h1>학생 역량 사전·사후 비교</h1>
+<p class="sub">영역별 점수를 입력하면 사전(파랑)·사후(빨강) 결과가 하나의 레이더 차트에 겹쳐 표시됩니다.</p>
+<div class="grid">
+ <div class="card">
+  <h2>영역별 점수 입력</h2>
+  <div class="tw"><table>
+   <thead><tr><th>평가 영역</th><th class="pre">사전</th><th class="post">사후</th><th></th></tr></thead>
+   <tbody id="rows"></tbody>
+  </table></div>
+  <div class="row">
+   <button id="add">+ 영역 추가</button>
+   <label>만점 <input type="number" id="max" value="100" min="1" max="1000" style="width:80px"></label>
+   <button id="reset">예시 데이터로 초기화</button>
+  </div>
+  <div id="msg"></div>
+ </div>
+ <div class="right">
+  <div class="card">
+   <div class="lg"><span><i style="border-color:var(--pre)"></i>사전평가</span><span><i style="border-color:var(--post)"></i>사후평가</span></div>
+   <canvas id="cv" width="800" height="800" role="img" aria-label="사전·사후 역량 레이더 차트"></canvas>
+   <div class="row" style="justify-content:center"><button class="p" id="save">차트 이미지 저장 (PNG)</button></div>
+  </div>
+  <div class="card">
+   <h2>분석 요약</h2>
+   <p id="sum"></p>
+   <div class="row"><button id="copy">요약 복사</button></div>
+  </div>
+ </div>
+</div>
+</main>
+<script>
+var SAMPLE=[["정보검색 능력",45,78],["비판적 사고",38,71],["디지털 도구 활용",52,85],["협업 능력",60,80],["창의적 문제해결",41,75]];
+var data=SAMPLE.map(function(r){return{n:r[0],a:r[1],b:r[2]}});
+var maxV=100;
+var $=function(i){return document.getElementById(i)};
+var cv=$("cv");
+
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;")}
+function note(t){$("msg").textContent=t}
+function num(v){v=parseFloat(v);return isNaN(v)?0:Math.max(0,Math.min(maxV,v))}
+
+function buildRows(){
+  $("rows").innerHTML=data.map(function(d,i){
+    return '<tr><td><input data-i="'+i+'" data-k="n" value="'+esc(d.n)+'" aria-label="영역명"></td>'+
+    '<td><input type="number" data-i="'+i+'" data-k="a" value="'+d.a+'" min="0" max="'+maxV+'" aria-label="사전 점수"></td>'+
+    '<td><input type="number" data-i="'+i+'" data-k="b" value="'+d.b+'" min="0" max="'+maxV+'" aria-label="사후 점수"></td>'+
+    '<td><button class="x" data-del="'+i+'" aria-label="삭제">✕</button></td></tr>';
+  }).join("");
+}
+
+function css(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim()}
+
+function draw(c,light){
+  var W=c.width,H=c.height,x=c.getContext("2d");
+  var col=light?{bg:"#ffffff",tx:"#1d2330",mut:"#6b7385",bd:"#d5dae3",pre:"#2563eb",post:"#dc2626"}
+    :{bg:null,tx:css("--tx"),mut:css("--mut"),bd:css("--bd"),pre:css("--pre"),post:css("--post")};
+  x.clearRect(0,0,W,H);
+  if(col.bg){x.fillStyle=col.bg;x.fillRect(0,0,W,H)}
+  var n=data.length,cx=W/2,cy=H/2+(light?20:0),R=W*0.32;
+  if(n<3){x.fillStyle=col.mut;x.font="28px sans-serif";x.textAlign="center";x.fillText("영역을 3개 이상 입력하세요",cx,cy);return}
+  var ang=function(i){return -Math.PI/2+i*2*Math.PI/n};
+  var pt=function(i,v){var r=R*v/maxV;return[cx+r*Math.cos(ang(i)),cy+r*Math.sin(ang(i))]};
+  var rings=5;x.lineWidth=1.5;x.strokeStyle=col.bd;x.fillStyle=col.mut;x.font="22px sans-serif";x.textAlign="left";
+  for(var k=1;k<=rings;k++){
+    x.beginPath();
+    for(var i=0;i<n;i++){var p=pt(i,maxV*k/rings);i?x.lineTo(p[0],p[1]):x.moveTo(p[0],p[1])}
+    x.closePath();x.stroke();
+    x.fillText(String(Math.round(maxV*k/rings*10)/10),cx+6,cy-R*k/rings-4);
+  }
+  for(var i=0;i<n;i++){var p=pt(i,maxV);x.beginPath();x.moveTo(cx,cy);x.lineTo(p[0],p[1]);x.stroke()}
+  function poly(key,color,fill){
+    x.beginPath();
+    for(var i=0;i<n;i++){var p=pt(i,data[i][key]);i?x.lineTo(p[0],p[1]):x.moveTo(p[0],p[1])}
+    x.closePath();x.globalAlpha=0.18;x.fillStyle=color;x.fill();x.globalAlpha=1;
+    x.lineWidth=4;x.strokeStyle=color;x.lineJoin="round";x.stroke();
+    for(var i=0;i<n;i++){var p=pt(i,data[i][key]);x.beginPath();x.arc(p[0],p[1],7,0,7);x.fillStyle=color;x.fill()}
+  }
+  poly("a",col.pre);poly("b",col.post);
+  x.font="bold 26px sans-serif";
+  for(var i=0;i<n;i++){
+    var a=ang(i),lp=[cx+(R+46)*Math.cos(a),cy+(R+46)*Math.sin(a)];
+    var cs=Math.cos(a);x.textAlign=Math.abs(cs)<0.2?"center":(cs>0?"left":"right");
+    x.fillStyle=col.tx;
+    var ty=lp[1]+(Math.sin(a)>0.5?8:(Math.sin(a)<-0.5?-26:-6));
+    x.fillText(data[i].n,lp[0]+(Math.abs(cs)<0.2?0:cs*-30),ty);
+    x.font="22px sans-serif";
+    x.fillStyle=col.pre;x.fillText(data[i].a,lp[0]+(Math.abs(cs)<0.2?-30:cs*-30),ty+28);
+    x.fillStyle=col.post;x.fillText(data[i].b,lp[0]+(Math.abs(cs)<0.2?30:cs*-30)+(Math.abs(cs)<0.2?0:(cs>0?44:-44)),ty+28);
+    x.font="bold 26px sans-serif";
+  }
+  if(light){
+    x.textAlign="left";x.font="24px sans-serif";
+    x.fillStyle=col.pre;x.fillRect(40,34,36,6);x.fillText("사전평가",86,46);
+    x.fillStyle=col.post;x.fillRect(220,34,36,6);x.fillText("사후평가",266,46);
+  }
+}
+
+function avg(k){return data.reduce(function(s,d){return s+d[k]},0)/data.length}
+function f(v){return (Math.round(v*10)/10).toFixed(1)}
+
+function summary(){
+  if(!data.length)return"평가 영역을 추가해 주세요.";
+  var pa=avg("a"),pb=avg("b"),diff=pb-pa;
+  var g=data.map(function(d){return{n:d.n,d:d.b-d.a,r:d.a>0?(d.b-d.a)/d.a*100:null,a:d.a,b:d.b}});
+  var byG=g.slice().sort(function(x,y){return y.d-x.d});
+  var hi=byG[0],lo=byG[byG.length-1];
+  var bestPre=data.slice().sort(function(x,y){return y.a-x.a})[0],weakPre=data.slice().sort(function(x,y){return x.a-y.a})[0];
+  var bestPost=data.slice().sort(function(x,y){return y.b-x.b})[0],weakPost=data.slice().sort(function(x,y){return x.b-y.b})[0];
+  var up=g.filter(function(z){return z.d>0}).length,down=g.filter(function(z){return z.d<0}).length;
+  var s="";
+  s+="■ 전체 평균: 사전 "+f(pa)+"점 → 사후 "+f(pb)+"점 ("+(diff>=0?"+":"")+f(diff)+"점"+(pa>0?", "+(diff>=0?"+":"")+f(diff/pa*100)+"%":"")+")\n";
+  s+="■ 사전 강점은 '"+bestPre.n+"'("+bestPre.a+"점), 보완점은 '"+weakPre.n+"'("+weakPre.a+"점)였습니다.\n";
+  s+="■ 사후 강점은 '"+bestPost.n+"'("+bestPost.b+"점), 상대적 보완점은 '"+weakPost.n+"'("+weakPost.b+"점)입니다.\n";
+  s+="■ 성장폭이 가장 큰 영역: '"+hi.n+"' ("+(hi.d>=0?"+":"")+hi.d+"점"+(hi.r!=null?", "+f(hi.r)+"%":"")+")\n";
+  if(data.length>1)s+="■ 성장폭이 가장 작은 영역: '"+lo.n+"' ("+(lo.d>=0?"+":"")+lo.d+"점)\n";
+  s+="■ 전체 "+data.length+"개 영역 중 "+up+"개 향상"+(down?", "+down+"개 하락":"")+".\n\n";
+  s+="영역별 변화: "+g.map(function(z){return z.n+" "+z.a+"→"+z.b+"("+(z.d>=0?"+":"")+z.d+")"}).join(", ");
+  return s;
+}
+
+function refresh(){draw(cv,false);$("sum").textContent=summary()}
+
+$("rows").addEventListener("input",function(e){
+  var t=e.target,i=+t.dataset.i,k=t.dataset.k;if(isNaN(i))return;
+  if(k==="n")data[i].n=t.value||"영역 "+(i+1);else data[i][k]=num(t.value);
+  refresh();
+});
+$("rows").addEventListener("change",function(e){
+  var t=e.target;if(t.type==="number"){t.value=num(t.value)}
+});
+$("rows").addEventListener("click",function(e){
+  var b=e.target.closest("[data-del]");if(!b)return;
+  if(data.length<=3){note("레이더 차트는 영역이 최소 3개 필요합니다.");return}
+  data.splice(+b.dataset.del,1);buildRows();refresh();note("");
+});
+$("add").onclick=function(){
+  if(data.length>=12){note("영역은 최대 12개까지 추가할 수 있습니다.");return}
+  data.push({n:"새 영역 "+(data.length+1),a:0,b:0});buildRows();refresh();note("");
+  var ins=$("rows").querySelectorAll("tr:last-child input");if(ins[0]){ins[0].focus();ins[0].select()}
+};
+$("max").addEventListener("input",function(){
+  var v=parseFloat(this.value);if(!(v>0))return;
+  maxV=Math.min(v,1000);
+  data.forEach(function(d){d.a=Math.min(d.a,maxV);d.b=Math.min(d.b,maxV)});
+  buildRows();refresh();
+});
+$("reset").onclick=function(){
+  data=SAMPLE.map(function(r){return{n:r[0],a:r[1],b:r[2]}});maxV=100;$("max").value=100;buildRows();refresh();note("예시 데이터로 초기화했습니다.");
+};
+$("copy").onclick=function(){
+  var t=summary();
+  try{navigator.clipboard.writeText(t).then(function(){note("요약을 복사했습니다.")},function(){note("복사 권한이 없습니다. 텍스트를 직접 선택해 복사해 주세요.")})}
+  catch(e){note("복사 권한이 없습니다. 텍스트를 직접 선택해 복사해 주세요.")}
+};
+$("save").onclick=async function(){
+  var dl=null;
+  try{dl=await window.claude.use("downloads")}catch(e){}
+  if(!dl){note("이 환경에서는 저장 기능을 사용할 수 없습니다. 차트를 길게 누르거나 캡처해 주세요.");return}
+  var c=document.createElement("canvas");c.width=1000;c.height=1000;draw(c,true);
+  c.toBlob(async function(blob){
+    try{await dl.save({filename:"역량_사전사후_레이더차트.png",data:blob});note("이미지를 저장했습니다.")}
+    catch(err){note(err&&err.code==="declined"?"저장을 취소했습니다.":"저장하지 못했습니다.")}
+  },"image/png");
+};
+buildRows();refresh();
+if(window.matchMedia)matchMedia("(prefers-color-scheme: dark)").addEventListener("change",refresh);
+</script>
+</body>
+</html>

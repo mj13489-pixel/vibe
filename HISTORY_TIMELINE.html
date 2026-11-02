@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#f5f7f4" />
+  <title>역사의 시간 — 인터랙티브 연표</title>
+  <style>
+    :root {
+      --ink: #202a25;
+      --muted: #718078;
+      --paper: #f5f7f4;
+      --card: #ffffff;
+      --line: #dce4dc;
+      --green: #47745a;
+      --green-dark: #31543f;
+      --green-soft: #e9f0e9;
+      --shadow: 0 18px 48px rgba(29, 49, 36, .10);
+      --radius: 22px;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 85% 5%, rgba(215, 229, 215, .55), transparent 28rem),
+        var(--paper);
+      font-family: Pretendard, "Noto Sans KR", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      min-height: 100vh;
+    }
+    button { font: inherit; }
+    .page-shell { width: min(1160px, calc(100% - 48px)); margin: 0 auto; padding: 48px 0 54px; }
+    .topline { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 42px; }
+    .brand { display: flex; align-items: center; gap: 10px; color: var(--green-dark); font-size: 14px; font-weight: 800; letter-spacing: -.02em; }
+    .brand-mark { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 12px; background: var(--green-dark); color: white; font-size: 17px; }
+    .top-label { color: var(--muted); font-size: 12px; font-weight: 700; letter-spacing: .12em; }
+    .hero { max-width: 720px; margin-bottom: 34px; }
+    .eyebrow { display: inline-flex; align-items: center; gap: 8px; color: var(--green); font-size: 13px; font-weight: 800; letter-spacing: .04em; margin-bottom: 15px; }
+    .eyebrow::before { content: ""; width: 22px; height: 1px; background: currentColor; }
+    h1 { margin: 0; font-size: clamp(36px, 6vw, 64px); line-height: 1.12; letter-spacing: -.065em; font-weight: 850; }
+    h1 span { color: var(--green); }
+    .intro { max-width: 570px; margin: 18px 0 0; color: #647169; font-size: 16px; line-height: 1.8; word-break: keep-all; }
+    .stats { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin: 28px 0 42px; }
+    .stat { display: flex; align-items: baseline; gap: 7px; padding: 11px 15px; background: rgba(255,255,255,.72); border: 1px solid #e5ebe5; border-radius: 14px; }
+    .stat strong { font-size: 17px; letter-spacing: -.04em; }
+    .stat span { color: var(--muted); font-size: 12px; font-weight: 650; }
+    .timeline-section { background: rgba(255,255,255,.72); border: 1px solid #e6ece6; border-radius: 28px; padding: 26px 26px 22px; box-shadow: 0 10px 34px rgba(39, 61, 44, .045); }
+    .section-head { display: flex; justify-content: space-between; align-items: end; gap: 18px; margin-bottom: 8px; }
+    .section-kicker { color: var(--green); font-size: 11px; font-weight: 850; letter-spacing: .13em; margin-bottom: 7px; }
+    h2 { margin: 0; font-size: 21px; letter-spacing: -.045em; }
+    .scroll-note { color: #8a968e; font-size: 12px; display: flex; align-items: center; gap: 7px; white-space: nowrap; }
+    .scroll-note b { font-size: 17px; font-weight: 500; }
+    .timeline-viewport { overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; scrollbar-color: #c8d5c9 transparent; padding: 8px 2px 15px; cursor: grab; overscroll-behavior-x: contain; }
+    .timeline-viewport:active { cursor: grabbing; }
+    .timeline-viewport::-webkit-scrollbar { height: 7px; }
+    .timeline-viewport::-webkit-scrollbar-track { background: #edf1ed; border-radius: 10px; }
+    .timeline-viewport::-webkit-scrollbar-thumb { background: #c8d5c9; border-radius: 10px; }
+    .timeline-track { display: flex; align-items: stretch; position: relative; width: max-content; min-width: 100%; padding: 12px 18px 10px; }
+    .timeline-track::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 2px; background: linear-gradient(90deg, #dce6dc, #b9cbbd 50%, #dce6dc); transform: translateY(-50%); }
+    .event-item { position: relative; flex: 0 0 184px; width: 184px; height: 342px; z-index: 1; }
+    .event-item + .event-item { margin-left: 30px; }
+    .event-card {
+      position: absolute; left: 0; width: 100%; min-height: 124px; padding: 16px 15px 14px;
+      display: flex; flex-direction: column; align-items: flex-start; text-align: left;
+      border: 1px solid #e4eae4; border-radius: 17px; background: white; color: var(--ink);
+      box-shadow: 0 7px 18px rgba(39, 61, 44, .045); cursor: pointer;
+      transition: border-color .22s ease, box-shadow .22s ease, transform .22s ease, background .22s ease;
+    }
+    .event-item:nth-child(odd) .event-card { top: 0; }
+    .event-item:nth-child(even) .event-card { bottom: 0; }
+    .event-card:hover { transform: translateY(-3px); border-color: #a9c0ad; box-shadow: 0 12px 24px rgba(39, 61, 44, .09); }
+    .event-card[aria-pressed="true"] { border: 1.5px solid var(--green); background: #f7faf7; box-shadow: 0 9px 22px rgba(57, 98, 68, .13); }
+    .event-type { color: #839087; font-size: 10px; font-weight: 800; letter-spacing: .07em; margin-bottom: 9px; }
+    .event-year { color: var(--green); font-size: 13px; font-weight: 850; letter-spacing: -.02em; margin-bottom: 5px; }
+    .event-title { font-size: 15px; line-height: 1.4; font-weight: 800; letter-spacing: -.045em; word-break: keep-all; }
+    .event-open { display: flex; align-items: center; gap: 4px; color: #98a39b; font-size: 10px; font-weight: 700; margin-top: auto; padding-top: 9px; }
+    .event-stem { position: absolute; left: 50%; width: 1px; height: 47px; background: #c8d6ca; transform: translateX(-50%); }
+    .event-item:nth-child(odd) .event-stem { top: 124px; }
+    .event-item:nth-child(even) .event-stem { bottom: 124px; }
+    .event-dot {
+      position: absolute; z-index: 2; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      width: 34px; height: 34px; border: 5px solid #fff; border-radius: 50%;
+      background: #b5c7b8; box-shadow: 0 0 0 1px #cbd8cd, 0 3px 8px rgba(30,55,37,.10);
+      color: white; display: grid; place-items: center; font-size: 9px; font-weight: 850; cursor: pointer;
+      transition: background .2s ease, box-shadow .2s ease, transform .2s ease;
+    }
+    .event-dot:hover { transform: translate(-50%, -50%) scale(1.12); }
+    .event-dot[aria-pressed="true"] { background: var(--green-dark); box-shadow: 0 0 0 5px #dce9de, 0 4px 12px rgba(30,55,37,.2); }
+    .timeline-foot { display: flex; justify-content: space-between; align-items: center; gap: 14px; margin-top: 12px; padding-top: 17px; border-top: 1px solid #edf1ed; }
+    .timeline-foot p { margin: 0; color: #7e8a81; font-size: 12px; line-height: 1.6; }
+    .count { color: var(--green-dark); font-weight: 800; white-space: nowrap; font-size: 12px; }
+    .bottom-note { margin: 22px 4px 0; color: #99a39b; font-size: 11px; line-height: 1.7; text-align: center; }
+
+    /* Popup */
+    .modal-backdrop { position: fixed; inset: 0; z-index: 20; display: none; align-items: center; justify-content: center; padding: 22px; background: rgba(24, 36, 28, .42); backdrop-filter: blur(5px); opacity: 0; transition: opacity .2s ease; }
+    .modal-backdrop.open { display: flex; }
+    .modal-backdrop.visible { opacity: 1; }
+    .modal { position: relative; width: min(510px, 100%); max-height: min(690px, calc(100dvh - 44px)); overflow-y: auto; padding: 34px; border-radius: 26px; background: #fff; box-shadow: 0 28px 90px rgba(15, 30, 19, .25); transform: translateY(12px) scale(.985); transition: transform .22s ease; }
+    .modal-backdrop.visible .modal { transform: translateY(0) scale(1); }
+    .modal-close { position: absolute; top: 17px; right: 17px; width: 36px; height: 36px; border: 0; border-radius: 50%; background: #f1f4f1; color: #68756c; cursor: pointer; font-size: 20px; line-height: 1; }
+    .modal-close:hover { background: #e7eee8; }
+    .modal-number { display: inline-flex; align-items: center; gap: 7px; color: var(--green); font-size: 11px; font-weight: 850; letter-spacing: .08em; }
+    .modal-number::before { content: ""; width: 17px; height: 1px; background: currentColor; }
+    .modal-year { margin-top: 21px; color: var(--green); font-size: 15px; font-weight: 850; }
+    .modal h3 { margin: 7px 42px 0 0; font-size: clamp(25px, 5vw, 34px); letter-spacing: -.06em; line-height: 1.25; }
+    .modal-description { margin: 20px 0 0; color: #536158; font-size: 15px; line-height: 1.9; word-break: keep-all; }
+    .why-box { margin-top: 22px; padding: 17px 18px; border-radius: 16px; background: #f2f6f2; }
+    .why-label { display: block; color: var(--green); font-size: 11px; font-weight: 850; letter-spacing: .05em; margin-bottom: 7px; }
+    .why-text { margin: 0; color: #536158; font-size: 13px; line-height: 1.75; word-break: keep-all; }
+    .modal-nav { display: flex; justify-content: space-between; gap: 12px; margin-top: 26px; }
+    .nav-button { min-height: 42px; padding: 0 15px; border: 1px solid #e3eae3; border-radius: 12px; background: white; color: #647168; font-size: 12px; font-weight: 750; cursor: pointer; transition: .2s ease; }
+    .nav-button:hover:not(:disabled) { border-color: #adc2b0; color: var(--green-dark); background: #f7faf7; }
+    .nav-button:disabled { opacity: .35; cursor: not-allowed; }
+    .nav-button.next { margin-left: auto; background: var(--green-dark); color: white; border-color: var(--green-dark); }
+    .nav-button.next:hover:not(:disabled) { background: #244631; }
+    button:focus-visible { outline: 3px solid #9bbca2; outline-offset: 3px; }
+
+    @media (max-width: 700px) {
+      .page-shell { width: min(100% - 28px, 600px); padding: 25px 0 36px; }
+      .topline { margin-bottom: 32px; }
+      .top-label { font-size: 10px; }
+      .hero { margin-bottom: 26px; }
+      .intro { font-size: 14px; }
+      .stats { margin: 22px 0 28px; gap: 7px; }
+      .stat { padding: 9px 11px; }
+      .stat strong { font-size: 15px; }
+      .timeline-section { padding: 20px 14px 16px; border-radius: 22px; }
+      .section-head { align-items: flex-start; flex-direction: column; gap: 7px; }
+      .scroll-note { align-self: flex-end; margin-top: -23px; font-size: 10px; }
+      .timeline-track { padding-left: 10px; padding-right: 10px; }
+      .event-item { flex-basis: 166px; width: 166px; height: 318px; }
+      .event-item + .event-item { margin-left: 23px; }
+      .event-card { min-height: 118px; padding: 14px 13px 12px; }
+      .event-title { font-size: 14px; }
+      .event-item:nth-child(odd) .event-stem { top: 118px; }
+      .event-item:nth-child(even) .event-stem { bottom: 118px; }
+      .event-item:nth-child(odd) .event-card { top: 0; }
+      .event-item:nth-child(even) .event-card { bottom: 0; }
+      .event-item:nth-child(odd) .event-stem { top: 118px; }
+      .event-item:nth-child(even) .event-stem { bottom: 118px; }
+      .timeline-foot { align-items: flex-start; }
+      .timeline-foot p { max-width: 82%; font-size: 11px; }
+      .modal { padding: 29px 23px 23px; border-radius: 22px; }
+      .modal-description { font-size: 14px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
+    }
+  
+
+    /* Topic and timeline management */
+    .toolbar { display:flex; align-items:end; justify-content:space-between; gap:16px; flex-wrap:wrap; margin:0 0 22px; padding:16px 18px; border:1px solid #e3eae3; border-radius:18px; background:rgba(255,255,255,.78); }
+    .topic-picker { display:flex; flex-direction:column; gap:7px; min-width:220px; flex:1; max-width:360px; }
+    .topic-picker label, .field-label { color:#718078; font-size:11px; font-weight:800; letter-spacing:.04em; }
+    .topic-picker select, .form-control { width:100%; min-height:43px; padding:10px 12px; border:1px solid #dfe7df; border-radius:11px; background:#fff; color:var(--ink); font:inherit; font-size:14px; outline:none; }
+    .topic-picker select:focus, .form-control:focus { border-color:#91ad97; box-shadow:0 0 0 3px rgba(71,116,90,.12); }
+    .toolbar-actions { display:flex; align-items:center; justify-content:flex-end; gap:8px; flex-wrap:wrap; }
+    .action-button { min-height:41px; padding:0 13px; border:1px solid #dfe7df; border-radius:11px; background:#fff; color:#526157; font-size:12px; font-weight:800; cursor:pointer; transition:.18s ease; }
+    .action-button:hover { border-color:#a9c0ad; background:#f7faf7; color:var(--green-dark); }
+    .action-button.primary { border-color:var(--green-dark); background:var(--green-dark); color:white; }
+    .action-button.primary:hover { background:#244631; }
+    .action-button.danger { color:#a34f4f; }
+    .action-button.danger:hover { border-color:#e4bdbd; background:#fff8f8; }
+    .event-manage-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:22px; padding-top:17px; border-top:1px solid #edf1ed; }
+    .event-manage-actions .action-button { min-height:38px; }
+    .empty-state { padding:48px 20px; border:1px dashed #cbd9cd; border-radius:18px; background:#fbfdfb; text-align:center; }
+    .empty-icon { display:grid; place-items:center; width:48px; height:48px; margin:0 auto 13px; border-radius:16px; background:#edf4ee; color:var(--green); font-size:23px; }
+    .empty-state strong { display:block; font-size:16px; letter-spacing:-.03em; }
+    .empty-state p { margin:8px 0 17px; color:#7b887f; font-size:13px; line-height:1.65; }
+    .manager-modal { width:min(620px,100%); }
+    .manager-modal h3 { margin:0 40px 7px 0; font-size:25px; letter-spacing:-.055em; }
+    .manager-intro { margin:0 0 22px; color:#758178; font-size:13px; line-height:1.7; }
+    .editor-form { display:grid; gap:15px; }
+    .form-grid { display:grid; grid-template-columns:140px minmax(0,1fr); gap:12px; }
+    .form-field { display:flex; flex-direction:column; gap:7px; min-width:0; }
+    .form-field textarea { min-height:106px; resize:vertical; line-height:1.65; }
+    .form-field textarea.short { min-height:78px; }
+    .form-actions { display:flex; justify-content:flex-end; gap:8px; padding-top:7px; }
+    .topic-create { padding:17px; border:1px solid #e5ebe5; border-radius:16px; background:#f8faf8; }
+    .topic-create h4 { margin:0 0 12px; font-size:14px; letter-spacing:-.03em; }
+    .topic-create-grid { display:grid; grid-template-columns:1fr 1.25fr auto; align-items:end; gap:9px; }
+    .topic-list { display:grid; gap:9px; margin-top:18px; }
+    .topic-row { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:12px; padding:13px; border:1px solid #e6ece6; border-radius:14px; background:#fff; }
+    .topic-row.current { border-color:#b8cbb9; background:#f8fbf8; }
+    .topic-row-main { min-width:0; display:grid; grid-template-columns:minmax(0,1fr); gap:6px; }
+    .topic-row-main input { min-width:0; font-weight:800; }
+    .topic-row-meta { color:#87938a; font-size:11px; }
+    .topic-row-actions { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:6px; }
+    .topic-row-actions .action-button { min-height:34px; padding:0 10px; font-size:11px; }
+    .manager-note { margin:15px 0 0; color:#89948c; font-size:11px; line-height:1.65; }
+    .toast { position:fixed; left:50%; bottom:24px; z-index:50; transform:translate(-50%,12px); opacity:0; pointer-events:none; padding:11px 16px; border-radius:12px; background:#263d2e; color:#fff; box-shadow:0 10px 30px rgba(0,0,0,.17); font-size:13px; font-weight:700; transition:.22s ease; }
+    .toast.show { opacity:1; transform:translate(-50%,0); }
+    .hidden { display:none !important; }
+    @media (max-width:700px) {
+      .toolbar { align-items:stretch; padding:13px; gap:12px; }
+      .topic-picker { max-width:none; }
+      .toolbar-actions { justify-content:flex-start; }
+      .toolbar-actions .action-button { flex:1 1 auto; }
+      .topic-create-grid { grid-template-columns:1fr; }
+      .topic-row { grid-template-columns:1fr; }
+      .topic-row-actions { justify-content:flex-start; }
+      .form-grid { grid-template-columns:1fr; }
+      .manager-modal { padding:27px 20px 21px; }
+    }
+</style>
+</head>
+<body>
+  <main class="page-shell">
+    <div class="topline">
+      <div class="brand"><span class="brand-mark">史</span><span>HISTORY TIMELINE</span></div>
+      <div class="top-label" id="topLabel">KOREAN HISTORY · JOSEON</div>
+    </div>
+
+    <header class="hero">
+      <div class="eyebrow">한눈에 읽는 우리 역사</div>
+      <h1 id="heroTitle">조선의 <span>시간</span></h1>
+      <p class="intro" id="heroIntro">1392년 조선의 시작부터 1897년 대한제국 선포까지.<br>중요한 사건을 하나씩 눌러 보며 역사의 흐름을 따라가 보세요.</p>
+    </header>
+
+    <section class="toolbar" aria-label="연표 관리 도구">
+      <div class="topic-picker">
+        <label for="topicSelect">현재 보고 있는 주제</label>
+        <select id="topicSelect" aria-label="타임라인 주제 선택"></select>
+      </div>
+      <div class="toolbar-actions">
+        <button class="action-button primary" id="addEventButton" type="button">＋ 사건 추가</button>
+        <button class="action-button" id="manageTopicsButton" type="button">주제 관리</button>
+        <button class="action-button" id="exportButton" type="button">내보내기</button>
+        <button class="action-button" id="importButton" type="button">가져오기</button>
+        <input id="importFile" class="hidden" type="file" accept=".json,application/json">
+      </div>
+    </section>
+
+    <div class="stats" aria-label="연표 요약">
+      <div class="stat"><strong id="statEvents">10개</strong><span>주요 사건</span></div>
+      <div class="stat"><strong id="statSpan">505년</strong><span>시간의 흐름</span></div>
+      <div class="stat"><strong id="statRange">1392—1897</strong><span>연표 범위</span></div>
+    </div>
+
+    <section class="timeline-section" aria-labelledby="timeline-title">
+      <div class="section-head">
+        <div>
+          <div class="section-kicker" id="sectionKicker">THE JOSEON DYNASTY</div>
+          <h2 id="timeline-title">조선 시대 주요 사건 10</h2>
+        </div>
+        <div class="scroll-note"><b>↔</b> 좌우로 넘겨 더 보기</div>
+      </div>
+
+      <div class="timeline-viewport" id="timelineViewport" tabindex="0" aria-label="사건 연표. 좌우 방향키 또는 가로 스크롤로 이동할 수 있습니다.">
+        <div class="timeline-track" id="timelineTrack"></div>
+      </div>
+      <div class="empty-state hidden" id="emptyState">
+        <div class="empty-icon">＋</div>
+        <strong>아직 등록된 사건이 없어요.</strong>
+        <p>이 주제의 첫 번째 사건을 추가해 나만의 연표를 만들어 보세요.</p>
+        <button class="action-button primary" id="emptyAddButton" type="button">첫 사건 추가하기</button>
+      </div>
+
+      <div class="timeline-foot">
+        <p id="timelineHint">사건 카드를 누르면 쉬운 설명과 역사적 의미를 확인할 수 있어요.</p>
+        <div class="count" id="eventCount">01 / 10</div>
+      </div>
+    </section>
+    <p class="bottom-note">사건은 연도순으로 자동 정렬됩니다. 직접 만든 주제와 사건은 이 브라우저에 자동 저장됩니다.</p>
+  </main>
+
+  <!-- 사건 설명 팝업 -->
+  <div class="modal-backdrop" id="modalBackdrop" aria-hidden="true">
+    <section class="modal" id="eventModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle" aria-describedby="modalDescription">
+      <button class="modal-close" id="closeModal" type="button" aria-label="팝업 닫기">×</button>
+      <div class="modal-number" id="modalNumber">EVENT 01</div>
+      <div class="modal-year" id="modalYear">1392년</div>
+      <h3 id="modalTitle">조선 건국</h3>
+      <p class="modal-description" id="modalDescription"></p>
+      <div class="why-box">
+        <span class="why-label">이 사건이 중요한 이유</span>
+        <p class="why-text" id="modalWhy"></p>
+      </div>
+      <div class="event-manage-actions">
+        <button class="action-button" id="editEventButton" type="button">사건 수정</button>
+        <button class="action-button danger" id="deleteEventButton" type="button">사건 삭제</button>
+      </div>
+      <div class="modal-nav">
+        <button class="nav-button" id="prevEvent" type="button">← 이전 사건</button>
+        <button class="nav-button next" id="nextEvent" type="button">다음 사건 →</button>
+      </div>
+    </section>
+  </div>
+
+  <!-- 사건 추가 / 수정 -->
+  <div class="modal-backdrop" id="editorBackdrop" aria-hidden="true">
+    <section class="modal manager-modal" role="dialog" aria-modal="true" aria-labelledby="editorTitle">
+      <button class="modal-close" id="closeEditor" type="button" aria-label="편집 창 닫기">×</button>
+      <h3 id="editorTitle">새 사건 추가</h3>
+      <p class="manager-intro">연도와 사건 정보를 입력해 주세요. 저장하면 연도순으로 자동 정렬됩니다.</p>
+      <form class="editor-form" id="eventForm">
+        <div class="form-grid">
+          <label class="form-field"><span class="field-label">연도</span><input class="form-control" id="eventYearInput" type="number" step="1" placeholder="예: 1945" required></label>
+          <label class="form-field"><span class="field-label">사건 이름</span><input class="form-control" id="eventTitleInput" type="text" maxlength="60" placeholder="예: 광복" required></label>
+        </div>
+        <label class="form-field"><span class="field-label">분야 / 분류</span><input class="form-control" id="eventTypeInput" type="text" maxlength="40" placeholder="예: 정치 · 사회"></label>
+        <label class="form-field"><span class="field-label">쉬운 설명</span><textarea class="form-control" id="eventDescriptionInput" required maxlength="1000" placeholder="초등학생도 이해할 수 있도록 사건을 설명해 주세요."></textarea></label>
+        <label class="form-field"><span class="field-label">이 사건이 중요한 이유</span><textarea class="form-control short" id="eventWhyInput" maxlength="700" placeholder="이 사건이 역사에서 어떤 의미가 있는지 적어 주세요."></textarea></label>
+        <div class="form-actions">
+          <button class="action-button" id="cancelEditor" type="button">취소</button>
+          <button class="action-button primary" type="submit">저장하기</button>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <!-- 주제 관리 -->
+  <div class="modal-backdrop" id="topicBackdrop" aria-hidden="true">
+    <section class="modal manager-modal" role="dialog" aria-modal="true" aria-labelledby="topicManagerTitle">
+      <button class="modal-close" id="closeTopicManager" type="button" aria-label="주제 관리 닫기">×</button>
+      <h3 id="topicManagerTitle">타임라인 주제 관리</h3>
+      <p class="manager-intro">역사, 과학, 인물 등 원하는 주제를 만들고 주제마다 별도의 사건 연표를 관리할 수 있어요.</p>
+      <form class="topic-create" id="topicForm">
+        <h4>새 타임라인 만들기</h4>
+        <div class="topic-create-grid">
+          <label class="form-field"><span class="field-label">주제 이름</span><input class="form-control" id="newTopicName" type="text" maxlength="35" placeholder="예: 고려 시대" required></label>
+          <label class="form-field"><span class="field-label">간단한 소개 (선택)</span><input class="form-control" id="newTopicDescription" type="text" maxlength="100" placeholder="예: 고려의 시작부터 끝까지"></label>
+          <button class="action-button primary" type="submit">＋ 주제 만들기</button>
+        </div>
+      </form>
+      <div class="topic-list" id="topicList"></div>
+      <p class="manager-note">주제 이름을 수정하거나 다른 주제로 이동할 수 있습니다. 주제를 삭제하면 그 안의 사건도 함께 삭제되며, 마지막 남은 주제는 삭제할 수 없습니다.</p>
+    </section>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const STORAGE_KEY = 'historyTimelineApp_v2';
+    const initialEvents = [
+      { year:1392, title:'조선 건국', type:'정치 · 국가의 시작', description:'이성계가 고려를 무너뜨리고 새로운 나라 조선을 세웠어요. 이성계는 왕이 되어 태조라는 이름으로 불렸답니다.', why:'새로운 왕조가 시작되면서 정치와 사회의 모습이 크게 바뀌었어요. 조선은 이후 약 500년 동안 이어졌어요.' },
+      { year:1418, title:'세종대왕 즉위', type:'정치 · 문화', description:'세종이 조선의 네 번째 왕으로 왕위에 올랐어요. 세종은 백성을 아끼며 과학, 문화, 농업 등 여러 분야의 발전에 힘썼답니다.', why:'세종 때에는 백성의 생활을 편리하게 만들기 위한 다양한 정책과 발명품이 만들어졌어요.' },
+      { year:1443, title:'한글 창제', type:'문화 · 문자', description:'세종대왕이 백성도 쉽게 읽고 쓸 수 있는 새로운 글자를 만들었어요. 처음에는 훈민정음이라고 불렀고, 1446년에 세상에 널리 알렸어요.', why:'글을 배우기 어려웠던 백성도 자신의 생각과 말을 글로 표현할 수 있는 길이 열렸어요.' },
+      { year:1592, title:'임진왜란', type:'전쟁 · 국난', description:'일본군이 조선을 침략하면서 큰 전쟁이 일어났어요. 이순신 장군이 이끄는 수군과 의병 등 많은 사람이 나라를 지키기 위해 싸웠어요.', why:'전쟁으로 백성과 나라가 큰 피해를 입었지만, 많은 사람이 힘을 모아 나라를 지키려 했어요. 전쟁은 1598년까지 이어졌어요.' },
+      { year:1636, title:'병자호란', type:'전쟁 · 외교', description:'청나라 군대가 조선을 침략했어요. 인조는 남한산성으로 피신했지만 오래 버티지 못했고, 결국 청나라에 항복했어요.', why:'이 전쟁을 통해 조선은 청나라와의 관계를 새롭게 맺게 되었고, 나라 안팎으로 큰 변화를 겪었어요.' },
+      { year:1724, title:'영조의 탕평책', type:'정치 · 개혁', description:'영조가 왕위에 오른 뒤, 여러 정치 세력이 서로 다투는 일을 줄이려고 탕평책을 추진했어요. 한쪽 편만 들지 않고 능력에 따라 사람을 고르게 쓰려는 정책이었답니다.', why:'정치 세력의 다툼을 줄이고 나라를 안정시키려는 노력이었어요. 탕평책은 영조 시대 정치를 이해하는 중요한 열쇠예요.' },
+      { year:1794, title:'수원 화성 축조', type:'문화 · 건축', description:'정조의 명령으로 수원 화성을 짓기 시작했어요. 튼튼한 성벽과 여러 방어 시설을 갖춘 화성은 1796년에 완성되었어요.', why:'수원 화성은 조선의 건축 기술과 과학적 생각을 보여 주는 소중한 문화유산이에요.' },
+      { year:1866, title:'병인양요', type:'전쟁 · 외교', description:'프랑스 군대가 강화도를 공격했어요. 조선은 프랑스군에 맞서 싸웠고, 프랑스군은 외규장각의 책 등을 가져간 뒤 물러났어요.', why:'조선이 서양 나라와 무력으로 충돌한 사건이에요. 이후 조선의 개항과 외교 문제를 이해하는 데 중요한 사건이 되었어요.' },
+      { year:1894, title:'동학농민운동', type:'사회 · 개혁', description:'세금과 관리들의 횡포로 고통받던 농민들이 동학의 가르침을 바탕으로 봉기했어요. 농민들은 잘못된 제도를 고치고 더 나은 세상을 만들자고 외쳤어요.', why:'백성 스스로 사회를 바꾸려 했던 큰 움직임이에요. 이 운동은 갑오개혁 등 당시의 여러 변화에도 영향을 주었어요.' },
+      { year:1897, title:'대한제국 선포', type:'정치 · 국가의 변화', description:'고종은 나라의 이름을 대한제국으로 바꾸고 황제의 자리에 올랐어요. 다른 나라와 대등한 독립 국가임을 알리려는 뜻이 담겨 있었어요.', why:'조선이라는 왕국에서 대한제국이라는 황제국으로 국가의 모습이 바뀌었어요. 근대 한국 역사의 중요한 출발점 중 하나예요.' }
+    ];
+
+    const makeId = () => (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : `id-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    const makeEvent = (event) => ({ id:event.id || makeId(), year:Number(event.year), title:String(event.title || ''), type:String(event.type || '주요 사건'), description:String(event.description || ''), why:String(event.why || '') });
+    const makeDefaultData = () => [{ id:'joseon', name:'조선 시대', description:'1392년 조선의 시작부터 1897년 대한제국 선포까지. 중요한 사건을 하나씩 눌러 보며 역사의 흐름을 따라가 보세요.', events:initialEvents.map(makeEvent) }];
+
+    function loadData() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (!saved) return makeDefaultData();
+        const parsed = JSON.parse(saved);
+        if (!Array.isArray(parsed) || parsed.length === 0) return makeDefaultData();
+        const valid = parsed.filter(t => t && typeof t.name === 'string' && Array.isArray(t.events)).map(t => ({
+          id:String(t.id || makeId()), name:t.name.slice(0,35), description:String(t.description || '').slice(0,150),
+          events:t.events.filter(e => e && Number.isFinite(Number(e.year)) && String(e.title || '').trim()).map(makeEvent).sort((a,b)=>a.year-b.year)
+        }));
+        return valid.length ? valid : makeDefaultData();
+      } catch (error) { console.warn('저장된 연표를 불러오지 못했습니다.', error); return makeDefaultData(); }
+    }
+
+    let topics = loadData();
+    let activeTopicId = topics[0].id;
+    let selectedIndex = 0;
+    let selectedEventId = null;
+    let editingEventId = null;
+    let lastFocusedElement = null;
+    let toastTimer = null;
+
+    const $ = (id) => document.getElementById(id);
+    const track = $('timelineTrack');
+    const viewport = $('timelineViewport');
+    const backdrop = $('modalBackdrop');
+    const editorBackdrop = $('editorBackdrop');
+    const topicBackdrop = $('topicBackdrop');
+    const currentTopic = () => topics.find(topic => topic.id === activeTopicId) || topics[0];
+    const currentEvents = () => currentTopic().events;
+
+    function persist() {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(topics)); }
+      catch (error) { showToast('저장 공간이 부족해 자동 저장하지 못했어요. 내보내기를 이용해 주세요.'); }
+    }
+    function showToast(message) {
+      const toast = $('toast'); toast.textContent = message; toast.classList.add('show');
+      clearTimeout(toastTimer); toastTimer = setTimeout(()=>toast.classList.remove('show'), 2500);
+    }
+    function setBackdropOpen(element, open) {
+      if (open) {
+        element.classList.add('open'); element.setAttribute('aria-hidden','false');
+        requestAnimationFrame(()=>element.classList.add('visible'));
+        document.body.style.overflow='hidden';
+      } else {
+        element.classList.remove('visible'); element.setAttribute('aria-hidden','true');
+        setTimeout(()=>element.classList.remove('open'),220);
+        if (![backdrop,editorBackdrop,topicBackdrop].some(el=>el!==element && el.classList.contains('open'))) document.body.style.overflow='';
+      }
+    }
+    function setText(id, value) { $(id).textContent = value; }
+
+    function renderApp() {
+      const topic = currentTopic();
+      const events = topic.events;
+      $('topicSelect').replaceChildren();
+      topics.forEach(t => { const option=document.createElement('option'); option.value=t.id; option.textContent=t.name; option.selected=t.id===activeTopicId; $('topicSelect').append(option); });
+      setText('topLabel', `${topic.name} · HISTORY TIMELINE`);
+      $('heroTitle').replaceChildren(document.createTextNode(`${topic.name}의 `));
+      const titleAccent=document.createElement('span'); titleAccent.textContent='시간'; $('heroTitle').append(titleAccent);
+      setText('heroIntro', topic.description || '사건을 하나씩 눌러 보며 시간의 흐름을 따라가 보세요.');
+      setText('statEvents', `${events.length}개`);
+      if (events.length) {
+        const first=events[0].year, last=events[events.length-1].year;
+        setText('statSpan', `${Math.max(0,last-first)}년`); setText('statRange', `${first}—${last}`);
+      } else { setText('statSpan','—'); setText('statRange','미등록'); }
+      setText('sectionKicker', topic.name.toUpperCase());
+      setText('timeline-title', `${topic.name} 주요 사건 ${events.length ? events.length : ''}`.trim());
+      $('timelineViewport').classList.toggle('hidden', events.length===0);
+      $('emptyState').classList.toggle('hidden', events.length!==0);
+      if (events.length) {
+        if (!events.some(e=>e.id===selectedEventId)) selectedEventId=events[0].id;
+        selectedIndex=events.findIndex(e=>e.id===selectedEventId);
+      } else { selectedEventId=null; selectedIndex=0; }
+      renderTimeline();
+    }
+
+    function renderTimeline() {
+      const events=currentEvents(); track.replaceChildren();
+      events.forEach((event,index)=>{
+        const item=document.createElement('article'); item.className='event-item'; item.dataset.id=event.id;
+        const card=document.createElement('button'); card.type='button'; card.className='event-card';
+        card.setAttribute('aria-label',`${event.year}년 ${event.title} 설명 보기`); card.setAttribute('aria-pressed','false');
+        const type=document.createElement('span'); type.className='event-type'; type.textContent=event.type || '주요 사건';
+        const year=document.createElement('span'); year.className='event-year'; year.textContent=`${event.year}년`;
+        const title=document.createElement('span'); title.className='event-title'; title.textContent=event.title;
+        const open=document.createElement('span'); open.className='event-open'; open.textContent='자세히 보기 ↗';
+        card.append(type,year,title,open); card.addEventListener('click',()=>openEvent(event.id,true));
+        const stem=document.createElement('span'); stem.className='event-stem'; stem.setAttribute('aria-hidden','true');
+        const dot=document.createElement('button'); dot.type='button'; dot.className='event-dot'; dot.textContent=String(index+1).padStart(2,'0');
+        dot.setAttribute('aria-label',`${event.year}년 ${event.title} 선택`); dot.setAttribute('aria-pressed','false'); dot.addEventListener('click',()=>openEvent(event.id,true));
+        item.append(card,stem,dot); track.append(item);
+      });
+      if (events.length) updateSelection(selectedIndex); else setText('eventCount','0 / 0');
+    }
+
+    function updateSelection(index) {
+      const events=currentEvents(); if (!events.length) return;
+      selectedIndex=Math.max(0,Math.min(events.length-1,index)); selectedEventId=events[selectedIndex].id;
+      [...track.children].forEach((item,i)=>{
+        const active=i===selectedIndex;
+        item.querySelector('.event-card').setAttribute('aria-pressed',String(active));
+        item.querySelector('.event-dot').setAttribute('aria-pressed',String(active));
+      });
+      setText('eventCount',`${String(selectedIndex+1).padStart(2,'0')} / ${String(events.length).padStart(2,'0')}`);
+    }
+
+    function openEvent(eventId, moveTimeline) {
+      const events=currentEvents(); const index=events.findIndex(e=>e.id===eventId); if (index<0) return;
+      if (!backdrop.classList.contains('open')) lastFocusedElement=document.activeElement;
+      updateSelection(index); const event=events[index];
+      setText('modalNumber',`EVENT ${String(index+1).padStart(2,'0')}`); setText('modalYear',`${event.year}년`);
+      setText('modalTitle',event.title); setText('modalDescription',event.description); setText('modalWhy',event.why || '이 사건은 당시 사회와 역사에 중요한 변화를 가져왔어요.');
+      $('prevEvent').disabled=index===0; $('nextEvent').disabled=index===events.length-1;
+      if (moveTimeline && track.children[index]) track.children[index].scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
+      setBackdropOpen(backdrop,true); requestAnimationFrame(()=>$('closeModal').focus());
+    }
+    function closeEvent() { setBackdropOpen(backdrop,false); if (lastFocusedElement?.focus) lastFocusedElement.focus(); }
+
+    function openEditor(eventId=null) {
+      editingEventId=eventId; const event=eventId ? currentEvents().find(e=>e.id===eventId) : null;
+      setText('editorTitle',event?'사건 수정':'새 사건 추가');
+      $('eventYearInput').value=event?.year ?? ''; $('eventTitleInput').value=event?.title ?? '';
+      $('eventTypeInput').value=event?.type ?? ''; $('eventDescriptionInput').value=event?.description ?? ''; $('eventWhyInput').value=event?.why ?? '';
+      setBackdropOpen(editorBackdrop,true); setTimeout(()=>$('eventYearInput').focus(),50);
+    }
+    function closeEditor() { setBackdropOpen(editorBackdrop,false); editingEventId=null; }
+
+    $('eventForm').addEventListener('submit',event=>{
+      event.preventDefault();
+      const year=Number($('eventYearInput').value), title=$('eventTitleInput').value.trim();
+      const description=$('eventDescriptionInput').value.trim();
+      if (!Number.isInteger(year) || !title || !description) { showToast('연도, 사건 이름, 쉬운 설명을 확인해 주세요.'); return; }
+      const wasEditing=Boolean(editingEventId);
+      const record={id:editingEventId || makeId(), year, title, type:$('eventTypeInput').value.trim() || '주요 사건', description, why:$('eventWhyInput').value.trim()};
+      const events=currentEvents(); const oldIndex=events.findIndex(e=>e.id===editingEventId);
+      if (oldIndex>=0) events.splice(oldIndex,1);
+      events.push(record); events.sort((a,b)=>a.year-b.year);
+      selectedEventId=record.id; persist(); closeEditor(); renderApp(); showToast(wasEditing?'사건을 수정했어요.':'새 사건을 추가했어요.');
+    });
+    $('addEventButton').addEventListener('click',()=>openEditor()); $('emptyAddButton').addEventListener('click',()=>openEditor());
+    $('editEventButton').addEventListener('click',()=>{ const id=selectedEventId; closeEvent(); openEditor(id); });
+    $('deleteEventButton').addEventListener('click',()=>{
+      const event=currentEvents().find(e=>e.id===selectedEventId); if (!event) return;
+      if (!confirm(`'${event.title}' 사건을 삭제할까요?`)) return;
+      const events=currentEvents(); const index=events.findIndex(e=>e.id===selectedEventId); events.splice(index,1);
+      selectedEventId=events[Math.max(0,index-1)]?.id || null; persist(); closeEvent(); renderApp(); showToast('사건을 삭제했어요.');
+    });
+    $('prevEvent').addEventListener('click',()=>{if(selectedIndex>0)openEvent(currentEvents()[selectedIndex-1].id,true);});
+    $('nextEvent').addEventListener('click',()=>{if(selectedIndex<currentEvents().length-1)openEvent(currentEvents()[selectedIndex+1].id,true);});
+    $('closeModal').addEventListener('click',closeEvent);
+    backdrop.addEventListener('click',e=>{if(e.target===backdrop)closeEvent();});
+
+    function renderTopicList() {
+      const list=$('topicList'); list.replaceChildren();
+      topics.forEach(topic=>{
+        const row=document.createElement('div'); row.className=`topic-row${topic.id===activeTopicId?' current':''}`;
+        const main=document.createElement('div'); main.className='topic-row-main';
+        const nameInput=document.createElement('input'); nameInput.className='form-control'; nameInput.type='text'; nameInput.maxLength=35; nameInput.value=topic.name; nameInput.setAttribute('aria-label',`${topic.name} 주제 이름`);
+        const meta=document.createElement('span'); meta.className='topic-row-meta'; meta.textContent=`사건 ${topic.events.length}개${topic.id===activeTopicId?' · 현재 선택':''}`;
+        main.append(nameInput,meta);
+        const actions=document.createElement('div'); actions.className='topic-row-actions';
+        const use=document.createElement('button'); use.className='action-button'; use.type='button'; use.textContent='열기'; use.addEventListener('click',()=>{activeTopicId=topic.id;selectedEventId=topic.events[0]?.id||null;persist();renderApp();closeTopicManager();});
+        const save=document.createElement('button'); save.className='action-button'; save.type='button'; save.textContent='이름 저장'; save.addEventListener('click',()=>{const name=nameInput.value.trim();if(!name){showToast('주제 이름을 입력해 주세요.');return;}topic.name=name;persist();renderTopicList();renderApp();showToast('주제 이름을 변경했어요.');});
+        const del=document.createElement('button'); del.className='action-button danger'; del.type='button'; del.textContent='삭제'; del.disabled=topics.length===1; del.addEventListener('click',()=>{
+          if(topics.length===1){showToast('마지막 주제는 삭제할 수 없어요.');return;}
+          if(!confirm(`'${topic.name}' 주제와 안에 있는 사건 ${topic.events.length}개를 모두 삭제할까요?`))return;
+          topics=topics.filter(t=>t.id!==topic.id);if(activeTopicId===topic.id){activeTopicId=topics[0].id;selectedEventId=topics[0].events[0]?.id||null;}persist();renderTopicList();renderApp();showToast('주제를 삭제했어요.');
+        });
+        actions.append(use,save,del); row.append(main,actions); list.append(row);
+      });
+    }
+    function openTopicManager(){lastFocusedElement=document.activeElement;renderTopicList();setBackdropOpen(topicBackdrop,true);setTimeout(()=>$('newTopicName').focus(),50);}
+    function closeTopicManager(){setBackdropOpen(topicBackdrop,false);if(lastFocusedElement?.focus)lastFocusedElement.focus();}
+    $('manageTopicsButton').addEventListener('click',openTopicManager); $('closeTopicManager').addEventListener('click',closeTopicManager);
+    topicBackdrop.addEventListener('click',e=>{if(e.target===topicBackdrop)closeTopicManager();});
+    $('topicForm').addEventListener('submit',e=>{
+      e.preventDefault();const name=$('newTopicName').value.trim();if(!name){showToast('주제 이름을 입력해 주세요.');return;}
+      const topic={id:makeId(),name,description:$('newTopicDescription').value.trim(),events:[]};topics.push(topic);activeTopicId=topic.id;selectedEventId=null;
+      $('newTopicName').value='';$('newTopicDescription').value='';persist();renderApp();renderTopicList();showToast('새 주제를 만들었어요. 사건을 추가해 보세요.');
+    });
+    $('topicSelect').addEventListener('change',e=>{activeTopicId=e.target.value;selectedEventId=currentEvents()[0]?.id||null;renderApp();});
+
+    $('exportButton').addEventListener('click',()=>{
+      const blob=new Blob([JSON.stringify(topics,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);
+      const a=document.createElement('a');a.href=url;a.download='history-timelines.json';document.body.append(a);a.click();a.remove();URL.revokeObjectURL(url);showToast('모든 타임라인을 파일로 저장했어요.');
+    });
+    $('importButton').addEventListener('click',()=>$('importFile').click());
+    $('importFile').addEventListener('change',async e=>{
+      const file=e.target.files?.[0];if(!file)return;
+      try {
+        const parsed=JSON.parse(await file.text());if(!Array.isArray(parsed)||!parsed.length)throw new Error('형식이 올바르지 않습니다.');
+        const imported=parsed.filter(t=>t&&typeof t.name==='string'&&Array.isArray(t.events)).map(t=>({id:makeId(),name:t.name.slice(0,35),description:String(t.description||'').slice(0,150),events:t.events.filter(ev=>ev&&Number.isFinite(Number(ev.year))&&String(ev.title||'').trim()).map(makeEvent).sort((a,b)=>a.year-b.year)}));
+        if(!imported.length)throw new Error('가져올 수 있는 주제가 없습니다.');
+        if(!confirm(`파일에서 ${imported.length}개 주제를 찾았습니다. 현재 연표를 모두 교체할까요?`))return;
+        topics=imported;activeTopicId=topics[0].id;selectedEventId=topics[0].events[0]?.id||null;persist();renderApp();showToast('타임라인을 가져왔어요.');
+      } catch(err){showToast('파일을 읽지 못했어요. 올바른 JSON 파일인지 확인해 주세요.');}
+      finally{e.target.value='';}
+    });
+
+    $('closeEditor').addEventListener('click',closeEditor); $('cancelEditor').addEventListener('click',closeEditor);
+    editorBackdrop.addEventListener('click',e=>{if(e.target===editorBackdrop)closeEditor();});
+    document.addEventListener('keydown',event=>{
+      const anyOpen=[backdrop,editorBackdrop,topicBackdrop].some(el=>el.classList.contains('open'));
+      if(event.key==='Escape'){
+        if(editorBackdrop.classList.contains('open'))closeEditor();
+        else if(topicBackdrop.classList.contains('open'))closeTopicManager();
+        else if(backdrop.classList.contains('open'))closeEvent();
+        return;
+      }
+      if(editorBackdrop.classList.contains('open')||topicBackdrop.classList.contains('open'))return;
+      if(backdrop.classList.contains('open')){
+        if(event.key==='ArrowRight'&&selectedIndex<currentEvents().length-1)openEvent(currentEvents()[selectedIndex+1].id,true);
+        if(event.key==='ArrowLeft'&&selectedIndex>0)openEvent(currentEvents()[selectedIndex-1].id,true);
+      } else if(!anyOpen&&(event.key==='ArrowRight'||event.key==='ArrowLeft')&&currentEvents().length){
+        const next=Math.max(0,Math.min(currentEvents().length-1,selectedIndex+(event.key==='ArrowRight'?1:-1)));
+        if(next!==selectedIndex){updateSelection(next);track.children[next]?.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});}
+      }
+    });
+
+    // 마우스로 잡아 끌어 연표를 좌우로 이동할 수 있도록 지원합니다.
+    let isDown=false,startX=0,scrollStart=0;
+    viewport.addEventListener('pointerdown',event=>{if(event.pointerType==='mouse'&&event.button===0){isDown=true;startX=event.clientX;scrollStart=viewport.scrollLeft;}});
+    window.addEventListener('pointerup',()=>{isDown=false;});
+    viewport.addEventListener('pointermove',event=>{if(isDown)viewport.scrollLeft=scrollStart-(event.clientX-startX);});
+
+    renderApp();
+  </script>
+</body>
+</html>
