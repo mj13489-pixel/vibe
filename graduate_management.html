@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>졸업 이수 관리 시스템</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- React & ReactDOM -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <!-- Babel -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <!-- html2canvas -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <!-- Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-50 text-gray-800">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    // --- [데이터 영역] ---
+    const MAJOR_REQUIREMENTS = {
+      "25": {
+        "단일전공": { "전공핵심": 27, "전공선택": 45, "기본이수과목": 21, "교과교육학": 8 },
+        "복수전공": { "전공핵심": 27, "전공선택": 24, "기본이수과목": 21, "교과교육학": 8 }
+      },
+      "26": {
+        "단일전공": { "전공핵심": 24, "전공선택": 48, "기본이수과목": 21, "교과교육학": 8 },
+        "복수전공": { "전공핵심": 24, "전공선택": 27, "기본이수과목": 21, "교과교육학": 8 }
+      }
+    };
+
+    const DOUBLE_MAJOR_REQUIREMENTS = {
+      "문헌정보교육과": { "전공핵심": 29, "전공선택": 21, "기본이수과목": 21, "교과교육학": 8 },
+      "지구과학교육과": { "전공핵심": 29, "전공선택": 21, "기본이수과목": 21, "교과교육학": 8 },
+      "생물교육과": { "전공핵심": 29, "전공선택": 21, "기본이수과목": 21, "교과교육학": 8 },
+      "영어교육과": { "전공핵심": 24, "전공선택": 26, "기본이수과목": 21, "교과교육학": 8 },
+      "기술·가정교육과": { "전공핵심": 39, "전공선택": 12, "기본이수과목": 36, "교과교육학": 8 }
+    };
+
+    // 새로 주신 정확한 과목 데이터 베이스 반영
+    const COURSE_DB = [
+      // ====== 환경교육과 (25학번) ======
+      { id: "e1", major: "환경교육과", yearId: "25", name: "환경철학", type: "전공핵심", year: 1, semester: 1, isBasic: false, isEdu: false, prof: "이재영", credits: 3 },
+      { id: "e2", major: "환경교육과", yearId: "25", name: "환경과학 및 실험", type: "전공핵심", year: 1, semester: 1, isBasic: false, isEdu: false, prof: "이정현", credits: 3 },
+      { id: "e3", major: "환경교육과", yearId: "25", name: "지구환경론", type: "전공핵심", year: 1, semester: 1, isBasic: false, isEdu: false, prof: "조재희", credits: 3 },
+      { id: "e4", major: "환경교육과", yearId: "25", name: "토양오염론", type: "전공핵심", year: 1, semester: 1, isBasic: true, isEdu: false, prof: "황진후", credits: 3 },
+      { id: "e5", major: "환경교육과", yearId: "25", name: "수질오염론", type: "전공핵심", year: 1, semester: 2, isBasic: true, isEdu: false, prof: "이정현", credits: 3 },
+      { id: "e6", major: "환경교육과", yearId: "25", name: "대기분석 및 실습", type: "전공핵심", year: 1, semester: 2, isBasic: false, isEdu: false, prof: "조재희", credits: 3 },
+      { id: "e7", major: "환경교육과", yearId: "25", name: "환경교육론", type: "전공핵심", year: 2, semester: 1, isBasic: false, isEdu: true, prof: "이재영", credits: 3 },
+      { id: "e8", major: "환경교육과", yearId: "25", name: "환경생태학", type: "전공핵심", year: 3, semester: 1, isBasic: false, isEdu: false, prof: "이정현", credits: 3 },
+      { id: "e9", major: "환경교육과", yearId: "25", name: "환경교과교재연구법", type: "전공핵심", year: 3, semester: 1, isBasic: false, isEdu: true, prof: "이재영", credits: 3 },
+      { id: "e10", major: "환경교육과", yearId: "25", name: "환경사회학", type: "전공선택", year: 1, semester: 2, isBasic: false, isEdu: false, prof: "황진후", credits: 3 },
+      { id: "e11", major: "환경교육과", yearId: "25", name: "생물환경론", type: "전공선택", year: 2, semester: 1, isBasic: true, isEdu: false, prof: "이정현", credits: 3 },
+      { id: "e12", major: "환경교육과", yearId: "25", name: "대기오염론", type: "전공선택", year: 2, semester: 1, isBasic: true, isEdu: false, prof: "조재희", credits: 3 },
+      { id: "e13", major: "환경교육과", yearId: "25", name: "환경교육과 교수학습방법", type: "전공선택", year: 2, semester: 2, isBasic: false, isEdu: true, prof: "이재영", credits: 3 },
+      { id: "e14", major: "환경교육과", yearId: "25", name: "환경교과논리및논술", type: "전공선택", year: 2, semester: 2, isBasic: false, isEdu: true, prof: "황진후", credits: 3 },
+      { id: "e15", major: "환경교육과", yearId: "25", name: "환경화학", type: "전공선택", year: 2, semester: 2, isBasic: false, isEdu: false, prof: "이정현", credits: 3 },
+      { id: "e16", major: "환경교육과", yearId: "25", name: "환경보호론", type: "전공선택", year: 2, semester: 2, isBasic: true, isEdu: false, prof: "조재희", credits: 3 },
+      { id: "e17", major: "환경교육과", yearId: "25", name: "고환경학", type: "전공선택", year: 2, semester: 2, isBasic: false, isEdu: false, prof: "황진후", credits: 3 },
+      { id: "e18", major: "환경교육과", yearId: "25", name: "환경지리학", type: "전공선택", year: 3, semester: 1, isBasic: true, isEdu: false, prof: "황진후", credits: 3 },
+      { id: "e19", major: "환경교육과", yearId: "25", name: "기후변화와 환경", type: "전공선택", year: 3, semester: 1, isBasic: false, isEdu: false, prof: "조재희", credits: 3 },
+      { id: "e20", major: "환경교육과", yearId: "25", name: "환경교육프로젝트 접근법", type: "전공선택", year: 3, semester: 2, isBasic: false, isEdu: false, prof: "황진후", credits: 3 },
+      { id: "e21", major: "환경교육과", yearId: "25", name: "지속가능발전교육론", type: "전공선택", year: 3, semester: 2, isBasic: false, isEdu: false, prof: "이재영", credits: 3 },
+      { id: "e22", major: "환경교육과", yearId: "25", name: "환경과 건강", type: "전공선택", year: 3, semester: 2, isBasic: false, isEdu: false, prof: "조재희", credits: 3 },
+      { id: "e23", major: "환경교육과", yearId: "25", name: "환경공학개론", type: "전공선택", year: 3, semester: 2, isBasic: false, isEdu: false, prof: "조재희", credits: 3 },
+      { id: "e24", major: "환경교육과", yearId: "25", name: "환경공간통계 및 실습", type: "전공선택", year: 3, semester: 2, isBasic: false, isEdu: false, prof: "황진후", credits: 3 },
+      { id: "e25", major: "환경교육과", yearId: "25", name: "환경분석", type: "전공선택", year: 4, semester: 1, isBasic: false, isEdu: false, prof: "이정현", credits: 3 },
+      { id: "e26", major: "환경교육과", yearId: "25", name: "환경캡스톤디자인", type: "전공선택", year: 4, semester: 1, isBasic: false, isEdu: false, prof: "이재영", credits: 3 },
+      { id: "e27", major: "환경교육과", yearId: "25", name: "환경재해와 방재", type: "전공선택", year: 4, semester: 1, isBasic: false, isEdu: false, prof: "황진후", credits: 3 },
+      { id: "e28", major: "환경교육과", yearId: "25", name: "환경법과 정책", type: "전공선택", year: 4, semester: 2, isBasic: true, isEdu: false, prof: "황진후", credits: 3 },
+      { id: "e29", major: "환경교육과", yearId: "25", name: "사회환경교육현장실습", type: "전공선택", year: 4, semester: 2, isBasic: false, isEdu: false, prof: "이재영", credits: 3 },
+      { id: "e30", major: "환경교육과", yearId: "25", name: "해양환경론", type: "전공선택", year: 4, semester: 2, isBasic: true, isEdu: false, prof: "이정현", credits: 3 },
+      { id: "e31", major: "환경교육과", yearId: "25", name: "신재생에너지와 미래환경", type: "전공선택", year: 4, semester: 2, isBasic: false, isEdu: false, prof: "황진후", credits: 3 },
+
+      // ====== 환경교육과 (26학번 - 25학과와 동일 구조 유지) ======
+      { id: "e32", major: "환경교육과", yearId: "26", name: "환경철학", type: "전공핵심", year: 1, semester: 1, isBasic: false, isEdu: false, prof: "이재영", credits: 3 },
+      { id: "e33", major: "환경교육과", yearId: "26", name: "환경과학 및 실험", type: "전공핵심", year: 1, semester: 1, isBasic: false, isEdu: false, prof: "이정현", credits: 3 },
+      { id: "e34", major: "환경교육과", yearId: "26", name: "지구환경론", type: "전공핵심", year: 1, semester: 1, isBasic: false, isEdu: false, prof: "조재희", credits: 3 },
+      { id: "e35", major: "환경교육과", yearId: "26", name: "수질오염론", type: "전공핵심", year: 1, semester: 2, isBasic: true, isEdu: false, prof: "이정현", credits: 3 },
+      { id: "e36", major: "환경교육과", yearId: "26", name: "대기분석 및 실습", type: "전공핵심", year: 2, semester: 1, isBasic: false, isEdu: false, prof: "조재희", credits: 3 },
+      { id: "e37", major: "환경교육과", yearId: "26", name: "환경교육론", type: "전공핵심", year: 2, semester: 1, isBasic: true, isEdu: true, prof: "이재영", credits: 3 },
+      { id: "e38", major: "환경교육과", yearId: "26", name: "환경생태학", type: "전공핵심", year: 2, semester: 2, isBasic: false, isEdu: false, prof: "이정현", credits: 3 },
+      { id: "e39", major: "환경교육과", yearId: "26", name: "환경교과교재연구법", type: "전공핵심", year: 3, semester: 1, isBasic: false, isEdu: true, prof: "이재영", credits: 3 },
+      { id: "e40", major: "환경교육과", yearId: "26", name: "환경사회학", type: "전공선택", year: 2, semester: 1, isBasic: false, isEdu: false, prof: "황진후", credits: 3 },
+      { id: "e41", major: "환경교육과", yearId: "26", name: "생물환경론", type: "전공선택", year: 2, semester: 1, isBasic: true, isEdu: false, prof: "이정현", credits: 3 },
+      { id: "e42", major: "환경교육과", yearId: "26", name: "대기오염론", type: "전공선택", year: 2, semester: 2, isBasic: true, isEdu: false, prof: "조재희", credits: 3 },
+      { id: "e43", major: "환경교육과", yearId: "26", name: "환경교육과 교수학습방법", type: "전공선택", year: 3, semester: 1, isBasic: false, isEdu: true, prof: "이재영", credits: 3 },
+      { id: "e44", major: "환경교육과", yearId: "26", name: "환경교과논리및논술", type: "전공선택", year: 3, semester: 1, isBasic: false, isEdu: true, prof: "황진후", credits: 3 },
+      { id: "e45", major: "환경교육과", yearId: "26", name: "환경화학", type: "전공선택", year: 3, semester: 1, isBasic: false, isEdu: false, prof: "이정현", credits: 3 },
+      { id: "e46", major: "환경교육과", yearId: "26", name: "환경보호론", type: "전공선택", year: 3, semester: 1, isBasic: true, isEdu: false, prof: "조재희", credits: 3 },
+      { id: "e47", major: "환경교육과", yearId: "26", name: "고환경학", type: "전공선택", year: 3, semester: 1, isBasic: false, isEdu: false, prof: "황진후", credits: 3 },
+      { id: "e48", major: "환경교육과", yearId: "26", name: "환경지리학", type: "전공선택", year: 3, semester: 2, isBasic: true, isEdu: false, prof: "황진후", credits: 3 },
+      { id: "e49", major: "환경교육과", yearId: "26", name: "기후변화와 환경", type: "전공선택", year: 3, semester: 2, isBasic: false, isEdu: false, prof: "조재희", credits: 3 },
+      { id: "e50", major: "환경교육과", yearId: "26", name: "환경교육프로젝트 접근법", type: "전공선택", year: 4, semester: 1, isBasic: false, isEdu: false, prof: "황진후", credits: 3 },
+      { id: "e51", major: "환경교육과", yearId: "26", name: "지속가능발전교육론", type: "전공선택", year: 4, semester: 1, isBasic: false, isEdu: false, prof: "이재영", credits: 3 },
+      { id: "e52", major: "환경교육과", yearId: "26", name: "환경과 건강", type: "전공선택", year: 4, semester: 1, isBasic: false, isEdu: false, prof: "조재희", credits: 3 },
+      { id: "e53", major: "환경교육과", yearId: "26", name: "환경공학개론", type: "전공선택", year: 4, semester: 1, isBasic: false, isEdu: false, prof: "조재희", credits: 3 },
+      { id: "e54", major: "환경교육과", yearId: "26", name: "환경공간통계 및 실습", type: "전공선택", year: 4, semester: 1, isBasic: false, isEdu: false, prof: "황진후", credits: 3 },
+      { id: "e55", major: "환경교육과", yearId: "26", name: "토양오염론", type: "전공선택", year: 4, semester: 1, isBasic: true, isEdu: false, prof: "황진후", credits: 3 },
+      { id: "e56", major: "환경교육과", yearId: "26", name: "환경분석", type: "전공선택", year: 4, semester: 2, isBasic: false, isEdu: false, prof: "이정현", credits: 3 },
+      { id: "e57", major: "환경교육과", yearId: "26", name: "환경캡스톤디자인", type: "전공선택", year: 4, semester: 2, isBasic: false, isEdu: false, prof: "이재영", credits: 3 },
+      { id: "e58", major: "환경교육과", yearId: "26", name: "환경재해와 방재", type: "전공선택", year: 4, semester: 2, isBasic: false, isEdu: false, prof: "황진후", credits: 3 },
+      { id: "e59", major: "환경교육과", yearId: "26", name: "환경법과 정책", type: "전공선택", year: 4, semester: 2, isBasic: true, isEdu: false, prof: "황진후", credits: 3 },
+      { id: "e60", major: "환경교육과", yearId: "26", name: "사회환경교육현장실습", type: "전공선택", year: 4, semester: 2, isBasic: false, isEdu: false, prof: "이재영", credits: 3 },
+      { id: "e61", major: "환경교육과", yearId: "26", name: "해양환경론", type: "전공선택", year: 4, semester: 2, isBasic: true, isEdu: false, prof: "이정현", credits: 3 },
+      { id: "e62", major: "환경교육과", yearId: "26", name: "신재생에너지와 미래환경", type: "전공선택", year: 4, semester: 2, isBasic: false, isEdu: false, prof: "황진후", credits: 3 },
+
+      // ====== 문헌정보교육과 ======
+      { id: "l1", major: "문헌정보교육과", name: "문헌정보학원론", type: "전공핵심", year: 1, semester: 1, isBasic: false, isEdu: false, credits: 3 },
+      { id: "l2", major: "문헌정보교육과", name: "정보분류론", type: "전공핵심", year: 1, semester: 2, isBasic: true, isEdu: false, credits: 3 },
+      { id: "l3", major: "문헌정보교육과", name: "목록조직론", type: "전공핵심", year: 2, semester: 1, isBasic: true, isEdu: false, credits: 3 },
+      { id: "l4", major: "문헌정보교육과", name: "문헌정보교육과교육론", type: "전공핵심", year: 2, semester: 1, isBasic: false, isEdu: true, credits: 3 },
+      { id: "l5", major: "문헌정보교육과", name: "학교도서관경영론", type: "전공핵심", year: 3, semester: 1, isBasic: true, isEdu: false, credits: 3 },
+      { id: "l6", major: "문헌정보교육과", name: "교재연구및지도법", type: "전공핵심", year: 3, semester: 1, isBasic: false, isEdu: true, credits: 3 },
+      { id: "l7", major: "문헌정보교육과", name: "정보서비스론", type: "전공핵심", year: 3, semester: 2, isBasic: true, isEdu: false, credits: 3 },
+      { id: "l8", major: "문헌정보교육과", name: "디지털도서관론", type: "전공핵심", year: 3, semester: 2, isBasic: true, isEdu: false, credits: 3 },
+      { id: "l9", major: "문헌정보교육과", name: "학교도서관경영의실제", type: "전공핵심", year: 3, semester: 2, isBasic: false, isEdu: false, credits: 3 },
+      { id: "l10", major: "문헌정보교육과", name: "독서교육론", type: "전공핵심", year: 4, semester: 1, isBasic: true, isEdu: false, credits: 3 },
+      { id: "l11", major: "문헌정보교육과", name: "정보문화사", type: "전공선택", year: 1, semester: 1, isBasic: false, isEdu: false, credits: 3 },
+      { id: "l12", major: "문헌정보교육과", name: "정보학의이해", type: "전공선택", year: 1, semester: 1, isBasic: false, isEdu: false, credits: 3 },
+      { id: "l13", major: "문헌정보교육과", name: "공공도서관운영론", type: "전공선택", year: 1, semester: 2, isBasic: false, isEdu: false, credits: 3 },
+      { id: "l14", major: "문헌정보교육과", name: "인터넷자원론", type: "전공선택", year: 1, semester: 2, isBasic: false, isEdu: false, credits: 3 },
+      { id: "l15", major: "문헌정보교육과", name: "아동및청소년자료론", type: "전공선택", year: 2, semester: 1, isBasic: false, isEdu: false, credits: 3 },
+      { id: "l16", major: "문헌정보교육과", name: "데이터리터러시", type: "전공선택", year: 2, semester: 1, isBasic: false, isEdu: false, credits: 3 },
+      { id: "l17", major: "문헌정보교육과", name: "독서교육의실제", type: "전공선택", year: 2, semester: 1, isBasic: false, isEdu: false, credits: 3 },
+      { id: "l18", major: "문헌정보교육과", name: "한국문헌자동화목록", type: "전공선택", year: 2, semester: 2, isBasic: false, isEdu: false, credits: 3 },
+      { id: "l19", major: "문헌정보교육과", name: "주제별정보원", type: "전공선택", year: 2, semester: 2, isBasic: false, isEdu: false, credits: 3 },
+      { id: "l20", major: "문헌정보교육과", name: "디지털도서관활용수업론", type: "전공선택", year: 2, semester: 2, isBasic: false, isEdu: false, credits: 3 },
+      { id: "l21", major: "문헌정보교육과", name: "정보매체와교수법", type: "전공선택", year: 3, semester: 2, isBasic: true, isEdu: false, credits: 3 },
+      { id: "l22", major: "문헌정보교육과", name: "비도서자료론", type: "전공선택", year: 3, semester: 2, isBasic: false, isEdu: false, credits: 3 },
+      { id: "l23", major: "문헌정보교육과", name: "메타데이터의이론과실제", type: "전공선택", year: 3, semester: 2, isBasic: false, isEdu: false, credits: 3 },
+      { id: "l24", major: "문헌정보교육과", name: "정보검색론", type: "전공선택", year: 4, semester: 1, isBasic: true, isEdu: false, credits: 3 },
+      { id: "l25", major: "문헌정보교육과", name: "정보활용교육론", type: "전공선택", year: 4, semester: 1, isBasic: false, isEdu: false, credits: 3 },
+      { id: "l26", major: "문헌정보교육과", name: "정보검색실습", type: "전공선택", year: 4, semester: 2, isBasic: false, isEdu: false, credits: 3 },
+      { id: "l27", major: "문헌정보교육과", name: "정보분류실습", type: "전공선택", year: 3, semester: 1, isBasic: false, isEdu: false, credits: 3 },
+      { id: "l28", major: "문헌정보교육과", name: "학술정보서비스", type: "전공선택", year: 3, semester: 1, isBasic: false, isEdu: false, credits: 3 },
+      { id: "l29", major: "문헌정보교육과", name: "어린이도서관서비스", type: "전공선택", year: 3, semester: 1, isBasic: false, isEdu: false, credits: 3 },
+      { id: "l30", major: "문헌정보교육과", name: "연속간행물관리론", type: "전공선택", year: 3, semester: 2, isBasic: false, isEdu: false, credits: 3 },
+      { id: "l31", major: "문헌정보교육과", name: "데이터베이스론", type: "전공선택", year: 3, semester: 2, isBasic: false, isEdu: false, credits: 3 },
+      { id: "l32", major: "문헌정보교육과", name: "장서관리론", type: "전공선택", year: 4, semester: 2, isBasic: false, isEdu: false, credits: 3 },
+      { id: "l33", major: "문헌정보교육과", name: "기록관리학", type: "전공선택", year: 4, semester: 2, isBasic: false, isEdu: false, credits: 3 },
+      { id: "l34", major: "문헌정보교육과", name: "창의적종합설계", type: "전공선택", year: 4, semester: 2, isBasic: false, isEdu: false, credits: 3 },
+
+      // ====== 생물교육과 ======
+      { id: "b1", major: "생물교육과", name: "생명과학 및 실험Ⅰ", type: "전공핵심", year: 1, semester: 1, isBasic: false, isEdu: false, credits: 3 },
+      { id: "b2", major: "생물교육과", name: "생명과학 및 실험Ⅱ", type: "전공핵심", year: 1, semester: 2, isBasic: false, isEdu: false, credits: 3 },
+      { id: "b3", major: "생물교육과", name: "유전학 및 실험", type: "전공핵심", year: 2, semester: 1, isBasic: true, isEdu: false, credits: 3 },
+      { id: "b4", major: "생물교육과", name: "세포생물학 및 실험", type: "전공핵심", year: 2, semester: 1, isBasic: true, isEdu: false, credits: 3 },
+      { id: "b5", major: "생물교육과", name: "동물생리학 및 실험", type: "전공핵심", year: 2, semester: 2, isBasic: true, isEdu: false, credits: 3 },
+      { id: "b6", major: "생물교육과", name: "식물생리학 및 실험", type: "전공핵심", year: 3, semester: 1, isBasic: true, isEdu: false, credits: 3 },
+      { id: "b7", major: "생물교육과", name: "생태학 및 실험", type: "전공핵심", year: 2, semester: 1, isBasic: true, isEdu: false, credits: 3 },
+      { id: "b8", major: "생물교육과", name: "발생학 및 실험", type: "전공핵심", year: 3, semester: 2, isBasic: true, isEdu: false, credits: 3 },
+      { id: "b9", major: "생물교육과", name: "생명과학교육론", type: "전공핵심", year: 2, semester: 2, isBasic: false, isEdu: true, credits: 3 },
+      { id: "b10", major: "생물교육과", name: "과학 논리 및 논술", type: "전공핵심", year: 4, semester: 1, isBasic: false, isEdu: true, credits: 3 },
+      { id: "b11", major: "생물교육과", name: "과학교재연구 및 지도방법Ⅲ", type: "전공선택", year: 3, semester: 2, isBasic: false, isEdu: true, credits: 3 },
+      { id: "b12", major: "생물교육과", name: "생명과학교수법", type: "전공선택", year: 3, semester: 1, isBasic: false, isEdu: false, credits: 3 },
+      { id: "b13", major: "생물교육과", name: "동물계통학 및 실험", type: "전공선택", year: 1, semester: 1, isBasic: false, isEdu: false, credits: 3 },
+      { id: "b14", major: "생물교육과", name: "고등식물분류학 및 지도", type: "전공선택", year: 1, semester: 2, isBasic: false, isEdu: false, credits: 3 },
+      { id: "b15", major: "생물교육과", name: "유전학Ⅱ 및 지도", type: "전공선택", year: 2, semester: 2, isBasic: false, isEdu: false, credits: 3 },
+      { id: "b16", major: "생물교육과", name: "식물계통학 및 지도", type: "전공선택", year: 1, semester: 1, isBasic: false, isEdu: false, credits: 3 },
+      { id: "b17", major: "생물교육과", name: "동물비교해부학 및 지도", type: "전공선택", year: 1, semester: 2, isBasic: false, isEdu: false, credits: 3 },
+      { id: "b18", major: "생물교육과", name: "생물통계학 및 지도", type: "전공선택", year: 2, semester: 1, isBasic: false, isEdu: false, credits: 3 },
+      { id: "b19", major: "생물교육과", name: "동물생리학Ⅱ 및 지도", type: "전공선택", year: 3, semester: 1, isBasic: false, isEdu: false, credits: 3 },
+      { id: "b20", major: "생물교육과", name: "면역학 및 지도", type: "전공선택", year: 4, semester: 2, isBasic: false, isEdu: false, credits: 3 },
+      { id: "b21", major: "생물교육과", name: "분자발생학", type: "전공선택", year: 4, semester: 1, isBasic: false, isEdu: false, credits: 3 },
+      { id: "b22", major: "생물교육과", name: "분자생물학 및 지도", type: "전공선택", year: 4, semester: 2, isBasic: false, isEdu: false, credits: 3 },
+      { id: "b23", major: "생물교육과", name: "생명과학교육과정 및 교재연구", type: "전공선택", year: 3, semester: 1, isBasic: false, isEdu: false, credits: 3 },
+      { id: "b24", major: "생물교육과", name: "미생물학 및 실험", type: "전공선택", year: 3, semester: 1, isBasic: false, isEdu: false, credits: 3 },
+      { id: "b25", major: "생물교육과", name: "야외실습 및 지도", type: "전공선택", year: 2, semester: 2, isBasic: false, isEdu: false, credits: 3 },
+      { id: "b26", major: "생물교육과", name: "암해실습 및 지도", type: "전공선택", year: 2, semester: 2, isBasic: false, isEdu: false, credits: 3 },
+      { id: "b27", major: "생물교육과", name: "생물화학 및 실험", type: "전공선택", year: 3, semester: 2, isBasic: false, isEdu: false, credits: 3 },
+      { id: "b28", major: "생물교육과", name: "식물생리학Ⅱ 및 지도", type: "전공선택", year: 3, semester: 2, isBasic: false, isEdu: false, credits: 3 },
+      { id: "b29", major: "생물교육과", name: "진화학 및 지도", type: "전공선택", year: 4, semester: 1, isBasic: false, isEdu: false, credits: 3 },
+      { id: "b30", major: "생물교육과", name: "환경생물학 및 지도", type: "전공선택", year: 4, semester: 2, isBasic: false, isEdu: false, credits: 3 },
+      { id: "b31", major: "생물교육과", name: "생물실험지도 및 평가방법", type: "전공선택", year: 4, semester: 1, isBasic: false, isEdu: false, credits: 3 },
+
+      // ====== 영어교육과 ======
+      { id: "en1", major: "영어교육과", name: "영어독해", type: "전공핵심", year: 1, semester: 1, isBasic: true, isEdu: false, credits: 3 },
+      { id: "en2", major: "영어교육과", name: "영미문화", type: "전공핵심", year: 1, semester: 1, isBasic: true, isEdu: false, credits: 3 },
+      { id: "en3", major: "영어교육과", name: "영문학개론", type: "전공핵심", year: 1, semester: 2, isBasic: true, isEdu: false, credits: 3 },
+      { id: "en4", major: "영어교육과", name: "영어교육론", type: "전공핵심", year: 2, semester: 1, isBasic: true, isEdu: true, credits: 3 },
+      { id: "en5", major: "영어교육과", name: "영어학개론", type: "전공핵심", year: 2, semester: 2, isBasic: true, isEdu: false, credits: 3 },
+      { id: "en6", major: "영어교육과", name: "영어회화", type: "전공핵심", year: 2, semester: 2, isBasic: true, isEdu: false, credits: 3 },
+      { id: "en7", major: "영어교육과", name: "영어교재연구및지도법", type: "전공핵심", year: 3, semester: 1, isBasic: false, isEdu: true, credits: 3 },
+      { id: "en8", major: "영어교육과", name: "영어문법지도법", type: "전공핵심", year: 4, semester: 1, isBasic: true, isEdu: false, credits: 3 },
+      { id: "en9", major: "영어교육과", name: "고급영어작문", type: "전공선택", year: 1, semester: 1, isBasic: false, isEdu: false, credits: 3 },
+      { id: "en10", major: "영어교육과", name: "영어회화Ⅰ&Ⅱ", type: "전공선택", year: 1, semester: 1, isBasic: false, isEdu: false, credits: 3 },
+      { id: "en11", major: "영어교육과", name: "영어의이해", type: "전공선택", year: 1, semester: 2, isBasic: false, isEdu: false, credits: 3 },
+      { id: "en12", major: "영어교육과", name: "영문법이해와적용", type: "전공선택", year: 1, semester: 2, isBasic: false, isEdu: false, credits: 3 },
+      { id: "en13", major: "영어교육과", name: "영미소설", type: "전공선택", year: 2, semester: 1, isBasic: false, isEdu: false, credits: 3 },
+      { id: "en14", major: "영어교육과", name: "영어교육과정론", type: "전공선택", year: 2, semester: 1, isBasic: false, isEdu: false, credits: 3 },
+      { id: "en15", major: "영어교육과", name: "글로벌영어(교육행정연계)", type: "전공선택", year: 2, semester: 1, isBasic: false, isEdu: false, credits: 3 },
+      { id: "en16", major: "영어교육과", name: "영어Literacy교육론", type: "전공선택", year: 2, semester: 2, isBasic: false, isEdu: false, credits: 3 },
+      { id: "en17", major: "영어교육과", name: "영문법", type: "전공선택", year: 2, semester: 2, isBasic: false, isEdu: false, credits: 3 },
+      { id: "en18", major: "영어교육과", name: "영어듣기지도법", type: "전공선택", year: 2, semester: 2, isBasic: false, isEdu: false, credits: 3 },
+      { id: "en19", major: "영어교육과", name: "영미희곡", type: "전공선택", year: 2, semester: 2, isBasic: false, isEdu: false, credits: 3 },
+      { id: "en20", major: "영어교육과", name: "공공실무영어(교육행정연계)", type: "전공선택", year: 2, semester: 2, isBasic: false, isEdu: false, credits: 3 },
+      { id: "en21", major: "영어교육과", name: "영어음성음운론", type: "전공선택", year: 3, semester: 1, isBasic: false, isEdu: false, credits: 3 },
+      { id: "en22", major: "영어교육과", name: "영어교육공학", type: "전공선택", year: 3, semester: 1, isBasic: false, isEdu: false, credits: 3 },
+      { id: "en23", major: "영어교육과", name: "영어교수방법", type: "전공선택", year: 3, semester: 2, isBasic: false, isEdu: false, credits: 3 },
+      { id: "en24", major: "영어교육과", name: "영미시", type: "전공선택", year: 3, semester: 1, isBasic: false, isEdu: false, credits: 3 },
+      { id: "en25", major: "영어교육과", name: "영어어휘교육론", type: "전공선택", year: 3, semester: 2, isBasic: false, isEdu: false, credits: 3 },
+      { id: "en26", major: "영어교육과", name: "영어통사론", type: "전공선택", year: 3, semester: 2, isBasic: false, isEdu: false, credits: 3 },
+      { id: "en27", major: "영어교육과", name: "영어쓰기지도법", type: "전공선택", year: 3, semester: 2, isBasic: false, isEdu: false, credits: 3 },
+      { id: "en28", major: "영어교육과", name: "영어교과논리및논술", type: "전공선택", year: 3, semester: 2, isBasic: false, isEdu: false, credits: 3 },
+      { id: "en29", major: "영어교육과", name: "응용언어학", type: "전공선택", year: 4, semester: 1, isBasic: false, isEdu: false, credits: 3 },
+      { id: "en30", major: "영어교육과", name: "영어말하기지도법", type: "전공선택", year: 4, semester: 1, isBasic: false, isEdu: false, credits: 3 },
+      { id: "en31", major: "영어교육과", name: "수업실연과면접", type: "전공선택", year: 4, semester: 1, isBasic: false, isEdu: false, credits: 3 },
+      { id: "en32", major: "영어교육과", name: "영어교육평가론", type: "전공선택", year: 4, semester: 2, isBasic: false, isEdu: false, credits: 3 },
+      { id: "en33", major: "영어교육과", name: "영어읽기지도법", type: "전공선택", year: 4, semester: 2, isBasic: false, isEdu: false, credits: 3 },
+
+      // ====== 기술·가정교육과 ======
+      { id: "he1", major: "기술·가정교육과", name: "정보통신", type: "전공핵심", year: 1, semester: 1, isBasic: true, isEdu: false, credits: 3 },
+      { id: "he2", major: "기술·가정교육과", name: "영양학", type: "전공핵심", year: 1, semester: 1, isBasic: true, isEdu: false, credits: 3 },
+      { id: "he3", major: "기술·가정교육과", name: "생명기술기초", type: "전공핵심", year: 1, semester: 2, isBasic: true, isEdu: false, credits: 3 },
+      { id: "he4", major: "기술·가정교육과", name: "가족학", type: "전공핵심", year: 1, semester: 2, isBasic: true, isEdu: false, credits: 3 },
+      { id: "he5", major: "기술·가정교육과", name: "제조기술", type: "전공핵심", year: 2, semester: 1, isBasic: true, isEdu: false, credits: 3 },
+      { id: "he6", major: "기술·가정교육과", name: "의복재료와 관리", type: "전공핵심", year: 2, semester: 1, isBasic: true, isEdu: false, credits: 3 },
+      { id: "he7", major: "기술·가정교육과", name: "기술·가정교육론", type: "전공핵심", year: 2, semester: 1, isBasic: true, isEdu: true, credits: 3 },
+      { id: "he8", major: "기술·가정교육과", name: "수송기술", type: "전공핵심", year: 2, semester: 2, isBasic: true, isEdu: false, credits: 3 },
+      { id: "he9", major: "기술·가정교육과", name: "가정생활과 복지", type: "전공핵심", year: 2, semester: 2, isBasic: true, isEdu: false, credits: 3 },
+      { id: "he10", major: "기술·가정교육과", name: "주거학", type: "전공핵심", year: 3, semester: 1, isBasic: true, isEdu: false, credits: 3 },
+      { id: "he11", major: "기술·가정교육과", name: "건설기술", type: "전공핵심", year: 3, semester: 1, isBasic: true, isEdu: false, credits: 3 },
+      { id: "he12", major: "기술·가정교육과", name: "기술·가정 교재연구 및 지도법", type: "전공핵심", year: 3, semester: 1, isBasic: false, isEdu: true, credits: 3 },
+      { id: "he13", major: "기술·가정교육과", name: "소비자학", type: "전공핵심", year: 3, semester: 2, isBasic: true, isEdu: false, credits: 3 },
+      { id: "he14", major: "기술·가정교육과", name: "수공예", type: "전공선택", year: 1, semester: 2, isBasic: false, isEdu: false, credits: 3 },
+      { id: "he15", major: "기술·가정교육과", name: "식품화학", type: "전공선택", year: 1, semester: 2, isBasic: false, isEdu: false, credits: 3 },
+      { id: "he16", major: "기술·가정교육과", name: "공학 기초 역학", type: "전공선택", year: 1, semester: 2, isBasic: false, isEdu: false, credits: 3 },
+      { id: "he17", major: "기술·가정교육과", name: "전기전자기술", type: "전공선택", year: 1, semester: 2, isBasic: false, isEdu: false, credits: 3 },
+      { id: "he18", major: "기술·가정교육과", name: "발명과지식재산일반", type: "전공선택", year: 2, semester: 1, isBasic: false, isEdu: false, credits: 3 },
+      { id: "he19", major: "기술·가정교육과", name: "한국조리", type: "전공선택", year: 2, semester: 1, isBasic: false, isEdu: false, credits: 3 },
+      { id: "he20", major: "기술·가정교육과", name: "의복디자인과구성", type: "전공선택", year: 2, semester: 2, isBasic: false, isEdu: false, credits: 3 },
+      { id: "he21", major: "기술·가정교육과", name: "AI와정보통신실습", type: "전공선택", year: 2, semester: 2, isBasic: false, isEdu: false, credits: 3 },
+      { id: "he22", major: "기술·가정교육과", name: "외국조리", type: "전공선택", year: 2, semester: 2, isBasic: false, isEdu: false, credits: 3 },
+      { id: "he23", major: "기술·가정교육과", name: "기술·가정교수법", type: "전공선택", year: 2, semester: 2, isBasic: false, isEdu: false, credits: 3 },
+      { id: "he24", major: "기술·가정교육과", name: "기술·가정평가방법", type: "전공선택", year: 3, semester: 2, isBasic: false, isEdu: false, credits: 3 },
+      { id: "he25", major: "기술·가정교육과", name: "기술·가정논리 및 논술", type: "전공선택", year: 4, semester: 1, isBasic: false, isEdu: false, credits: 3 },
+      { id: "he26", major: "기술·가정교육과", name: "전기전자실습", type: "전공선택", year: 3, semester: 1, isBasic: false, isEdu: false, credits: 3 },
+      { id: "he27", major: "기술·가정교육과", name: "조리과학", type: "전공선택", year: 3, semester: 1, isBasic: false, isEdu: false, credits: 3 },
+      { id: "he28", major: "기술·가정교육과", name: "인간발달", type: "전공선택", year: 3, semester: 1, isBasic: false, isEdu: false, credits: 3 },
+      { id: "he29", major: "기술·가정교육과", name: "기계재료 및 실습", type: "전공선택", year: 3, semester: 2, isBasic: false, isEdu: false, credits: 3 },
+      { id: "he30", major: "기술·가정교육과", name: "가정자원과재무관리", type: "전공선택", year: 3, semester: 2, isBasic: false, isEdu: false, credits: 3 },
+      { id: "he31", major: "기술·가정교육과", name: "첨단과학과 기술교육의 최신과제", type: "전공선택", year: 3, semester: 2, isBasic: false, isEdu: false, credits: 3 },
+      { id: "he32", major: "기술·가정교육과", name: "자동차기술", type: "전공선택", year: 4, semester: 1, isBasic: false, isEdu: false, credits: 3 },
+      { id: "he33", major: "기술·가정교육과", name: "의복봉제", type: "전공선택", year: 4, semester: 1, isBasic: false, isEdu: false, credits: 3 },
+      { id: "he34", major: "기술·가정교육과", name: "설계와 문제해결", type: "전공선택", year: 4, semester: 2, isBasic: false, isEdu: false, credits: 3 },
+      { id: "he35", major: "기술·가정교육과", name: "창의적종합설계", type: "전공선택", year: 4, semester: 2, isBasic: false, isEdu: false, credits: 3 },
+
+      // ====== 지구과학교육과 ======
+      { id: "es1", major: "지구과학교육과", name: "지구과학및실험Ⅰ", type: "전공핵심", year: 1, semester: 1, isBasic: false, isEdu: false, credits: 3 },
+      { id: "es2", major: "지구과학교육과", name: "지구과학및실험Ⅱ", type: "전공핵심", year: 1, semester: 2, isBasic: false, isEdu: false, credits: 3 },
+      { id: "es3", major: "지구과학교육과", name: "지질학및실험", type: "전공핵심", year: 1, semester: 1, isBasic: true, isEdu: false, credits: 3 },
+      { id: "es4", major: "지구과학교육과", name: "천문학및실험", type: "전공핵심", year: 1, semester: 2, isBasic: true, isEdu: false, credits: 3 },
+      { id: "es5", major: "지구과학교육과", name: "지구과학교육론", type: "전공핵심", year: 2, semester: 1, isBasic: true, isEdu: true, credits: 3 },
+      { id: "es6", major: "지구과학교육과", name: "지구환경과학", type: "전공핵심", year: 2, semester: 1, isBasic: false, isEdu: false, credits: 3 },
+      { id: "es7", major: "지구과학교육과", name: "대기과학및실험", type: "전공핵심", year: 2, semester: 1, isBasic: true, isEdu: false, credits: 3 },
+      { id: "es8", major: "지구과학교육과", name: "해양학및실험", type: "전공핵심", year: 2, semester: 2, isBasic: true, isEdu: false, credits: 3 },
+      { id: "es9", major: "지구과학교육과", name: "지구물리학및실험", type: "전공핵심", year: 3, semester: 1, isBasic: true, isEdu: false, credits: 3 },
+      { id: "es10", major: "지구과학교육과", name: "과학논리및논술", type: "전공핵심", year: 4, semester: 1, isBasic: false, isEdu: true, credits: 3 },
+      { id: "es11", major: "지구과학교육과", name: "광물학및실험", type: "전공선택", year: 2, semester: 1, isBasic: false, isEdu: false, credits: 3 },
+      { id: "es12", major: "지구과학교육과", name: "기상관측및분석", type: "전공선택", year: 2, semester: 2, isBasic: false, isEdu: false, credits: 3 },
+      { id: "es13", major: "지구과학교육과", name: "암석학및실험", type: "전공선택", year: 2, semester: 2, isBasic: false, isEdu: false, credits: 3 },
+      { id: "es14", major: "지구과학교육과", name: "지구과학교재연구및지도법", type: "전공선택", year: 2, semester: 2, isBasic: false, isEdu: false, credits: 3 },
+      { id: "es15", major: "지구과학교육과", name: "지구과학탐구지도", type: "전공선택", year: 3, semester: 1, isBasic: false, isEdu: false, credits: 3 },
+      { id: "es16", major: "지구과학교육과", name: "천체물리학Ⅰ", type: "전공선택", year: 3, semester: 1, isBasic: false, isEdu: false, credits: 3 },
+      { id: "es17", major: "지구과학교육과", name: "물리해양학Ⅰ", type: "전공선택", year: 3, semester: 1, isBasic: false, isEdu: false, credits: 3 },
+      { id: "es18", major: "지구과학교육과", name: "기상열역학및역학Ⅰ", type: "전공선택", year: 3, semester: 2, isBasic: false, isEdu: false, credits: 3 },
+      { id: "es19", major: "지구과학교육과", name: "지사학", type: "전공선택", year: 4, semester: 1, isBasic: false, isEdu: false, credits: 3 },
+      { id: "es20", major: "지구과학교육과", name: "우주론", type: "전공선택", year: 4, semester: 1, isBasic: false, isEdu: false, credits: 3 },
+      { id: "es21", major: "지구과학교육과", name: "지구과학교육과정및평가", type: "전공선택", year: 2, semester: 2, isBasic: false, isEdu: false, credits: 3 },
+      { id: "es22", major: "지구과학교육과", name: "고생물학및실험", type: "전공선택", year: 3, semester: 2, isBasic: false, isEdu: false, credits: 3 },
+      { id: "es23", major: "지구과학교육과", name: "관측천문학", type: "전공선택", year: 3, semester: 2, isBasic: false, isEdu: false, credits: 3 },
+      { id: "es24", major: "지구과학교육과", name: "응용지구물리학", type: "전공선택", year: 3, semester: 2, isBasic: false, isEdu: false, credits: 3 },
+      { id: "es25", major: "지구과학교육과", name: "기상열역학및역학Ⅱ", type: "전공선택", year: 4, semester: 1, isBasic: false, isEdu: false, credits: 3 },
+      { id: "es26", major: "지구과학교육과", name: "천체물리학Ⅱ", type: "전공선택", year: 4, semester: 1, isBasic: false, isEdu: false, credits: 3 },
+      { id: "es27", major: "지구과학교육과", name: "물리해양학Ⅱ", type: "전공선택", year: 4, semester: 2, isBasic: false, isEdu: false, credits: 3 },
+      { id: "es28", major: "지구과학교육과", name: "응용지질학", type: "전공선택", year: 4, semester: 2, isBasic: false, isEdu: false, credits: 3 }
+    ];
+
+    // --- [컴포넌트 영역] ---
+    const App = () => {
+      const [isLoggedIn, setIsLoggedIn] = useState(false);
+      const [userId, setUserId] = useState('');
+      const [studentYear, setStudentYear] = useState('25');
+      const [doubleMajor, setDoubleMajor] = useState('없음');
+
+      const [completedCourses, setCompletedCourses] = useState({});
+      const [plannedCourses, setPlannedCourses] = useState({});
+      const [activeTab, setActiveTab] = useState('dashboard');
+      const [filter, setFilter] = useState({ name: '', year: 'all', semester: 'all', type: 'all', status: 'all' });
+
+      const handleLogin = (e) => {
+        e.preventDefault();
+        if (!userId.trim()) return alert("코드를 입력해주세요.");
+        
+        const savedData = localStorage.getItem(`edu_tracker_${userId}`);
+        if (savedData) {
+          const parsed = JSON.parse(savedData);
+          setStudentYear(parsed.studentYear || '25');
+          setDoubleMajor(parsed.doubleMajor || '없음');
+          setCompletedCourses(parsed.completed || {});
+          setPlannedCourses(parsed.planned || {});
+        } else {
+          setCompletedCourses({});
+          setPlannedCourses({});
+        }
+        setIsLoggedIn(true);
+      };
+
+      useEffect(() => {
+        if (isLoggedIn) {
+          localStorage.setItem(`edu_tracker_${userId}`, JSON.stringify({
+            studentYear, doubleMajor, completed: completedCourses, planned: plannedCourses
+          }));
+        }
+      }, [completedCourses, plannedCourses, studentYear, doubleMajor, isLoggedIn, userId]);
+
+      const toggleCourse = (id) => {
+        setCompletedCourses(prev => ({ ...prev, [id]: !prev[id] }));
+      };
+
+      const setCoursePlan = (id, semesterCode) => {
+        setPlannedCourses(prev => ({ ...prev, [id]: semesterCode }));
+      };
+
+      const handleDragStart = (e, id) => {
+        e.dataTransfer.setData('text/plain', id);
+        e.target.style.opacity = '0.4';
+      };
+      
+      const handleDragEnd = (e) => {
+        e.target.style.opacity = '1';
+      };
+
+      const handleDrop = (e, semesterCode) => {
+        e.preventDefault();
+        e.currentTarget.classList.remove('bg-green-50', 'border-green-400');
+        const id = e.dataTransfer.getData('text/plain');
+        if (id) setCoursePlan(id, semesterCode);
+      };
+
+      const handleDragOver = (e) => {
+        e.preventDefault();
+        e.currentTarget.classList.add('bg-green-50', 'border-green-400');
+      };
+
+      const handleDragLeave = (e) => {
+        e.currentTarget.classList.remove('bg-green-50', 'border-green-400');
+      };
+
+      const captureDashboard = () => {
+        const target = document.getElementById('dashboard-capture-area');
+        if(!target) return;
+        html2canvas(target, { scale: 2 }).then(canvas => {
+          const link = document.createElement('a');
+          link.download = `수강현황대시보드_${userId}.png`;
+          link.href = canvas.toDataURL('image/png');
+          link.click();
+        });
+      };
+
+      const envCourses = COURSE_DB.filter(c => c.major === "환경교육과" && c.yearId === studentYear);
+      const subCourses = doubleMajor !== '없음' ? COURSE_DB.filter(c => c.major === doubleMajor) : [];
+      
+      const applyFilter = (list) => list.filter(c => {
+        const matchName = c.name.toLowerCase().includes(filter.name.toLowerCase());
+        const matchYear = filter.year === 'all' || c.year.toString() === filter.year;
+        const matchSem = filter.semester === 'all' || c.semester.toString() === filter.semester;
+        const matchType = filter.type === 'all' || c.type === filter.type || (filter.type === '기본이수' && c.isBasic) || (filter.type === '교과교육' && c.isEdu);
+        const matchStatus = filter.status === 'all' || (filter.status === 'completed' ? completedCourses[c.id] : !completedCourses[c.id]);
+        return matchName && matchYear && matchSem && matchType && matchStatus;
+      });
+
+      const filteredEnv = applyFilter(envCourses);
+      const filteredSub = applyFilter(subCourses);
+
+      const renderCourseCard = (c, isPlanView = false) => {
+        const isDone = completedCourses[c.id];
+        return (
+          <div 
+            key={c.id} 
+            draggable={isPlanView}
+            onDragStart={(e) => handleDragStart(e, c.id)}
+            onDragEnd={handleDragEnd}
+            onClick={() => !isPlanView && toggleCourse(c.id)} 
+            className={`relative flex flex-col p-4 rounded-xl border-2 transition-all shadow-sm ${isPlanView ? 'cursor-grab active:cursor-grabbing hover:shadow-md hover:-translate-y-0.5' : 'cursor-pointer hover:shadow-md'} ${isDone && !isPlanView ? 'border-green-500 bg-green-50' : 'border-gray-200 bg-white hover:border-green-300'} ${isPlanView ? 'w-56 flex-shrink-0' : 'w-full'}`}
+          >
+            <div className="flex justify-between items-start mb-2 pointer-events-none">
+              <span className={`text-xs font-bold px-2 py-1 rounded-full ${c.type === '전공핵심' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>
+                {c.type}
+              </span>
+              {!isPlanView && (
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center border-2 ${isDone ? 'bg-green-500 border-green-500 text-white' : 'border-gray-300'}`}>
+                  {isDone && <i className="fas fa-check text-sm"></i>}
+                </div>
+              )}
+              {isPlanView && (
+                 <div className="text-gray-400"><i className="fas fa-grip-vertical"></i></div>
+              )}
+            </div>
+            
+            <h3 className="font-bold text-gray-800 text-lg leading-tight mb-2 break-keep pointer-events-none">{c.name}</h3>
+            
+            <div className="mt-auto pt-3 border-t border-gray-100/50 text-xs text-gray-500 flex flex-wrap gap-2 items-center pointer-events-none mb-2">
+              <span className="bg-gray-100 px-2 py-1 rounded-md whitespace-nowrap">{c.year}학년 {c.semester}학기</span>
+              <span className="bg-gray-100 px-2 py-1 rounded-md whitespace-nowrap">{c.credits}학점</span>
+              {c.prof && <span className="bg-gray-100 px-2 py-1 rounded-md whitespace-nowrap"><i className="fas fa-user-tie mr-1"></i>{c.prof}</span>}
+            </div>
+
+            {/* 기본이수과목 및 교과교육학 표시 뱃지 */}
+            <div className="flex gap-1 flex-wrap pointer-events-none">
+              {c.isBasic && <span className="text-[10px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded border border-purple-200 whitespace-nowrap">기본이수과목</span>}
+              {c.isEdu && <span className="text-[10px] bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded border border-orange-200 whitespace-nowrap">교과교육학</span>}
+            </div>
+            
+            {/* 로드맵 뷰일 때 학기 선택 드롭다운 (모바일 터치용) */}
+            {isPlanView && (
+              <select 
+                className="mt-3 w-full text-xs p-1 border rounded border-gray-300 bg-gray-50 focus:outline-none focus:border-green-500 text-gray-600"
+                value={plannedCourses[c.id] || "unassigned"}
+                onChange={(e) => setCoursePlan(c.id, e.target.value)}
+              >
+                <option value="unassigned">미배치 (위로 올리기)</option>
+                <option value="1-1">1학년 1학기</option>
+                <option value="1-2">1학년 2학기</option>
+                <option value="2-1">2학년 1학기</option>
+                <option value="2-2">2학년 2학기</option>
+                <option value="3-1">3학년 1학기</option>
+                <option value="3-2">3학년 2학기</option>
+                <option value="4-1">4학년 1학기</option>
+                <option value="4-2">4학년 2학기</option>
+              </select>
+            )}
+          </div>
+        );
+      };
+
+      const getStats = (list, reqs) => {
+        let earned = { core: 0, select: 0, basic: 0, edu: 0 };
+        list.forEach(c => {
+          if (completedCourses[c.id]) {
+            if (c.type === '전공핵심') earned.core += c.credits;
+            if (c.type === '전공선택') earned.select += c.credits;
+            if (c.isBasic) earned.basic += c.credits;
+            if (c.isEdu) earned.edu += c.credits;
+          }
+        });
+        const totalReq = reqs["전공핵심"] + reqs["전공선택"];
+        const totalEarned = earned.core + earned.select;
+        
+        return { earned, reqs, totalReq, totalEarned };
+      };
+
+      // 로그인 화면
+      if (!isLoggedIn) {
+        return (
+          <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-green-50 to-emerald-100">
+            <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md">
+              <div className="text-center mb-8">
+                <div className="w-16 h-16 bg-green-500 text-white rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4 shadow-lg shadow-green-200">
+                  <i className="fas fa-graduation-cap"></i>
+                </div>
+                <h1 className="text-2xl font-bold text-gray-800">졸업 이수 관리</h1>
+                <p className="text-gray-500 mt-2 text-sm">본인만의 관리 코드를 입력해 시작하세요.</p>
+              </div>
+              <form onSubmit={handleLogin} className="space-y-5">
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">고유 코드 (아이디/별명)</label>
+                  <input type="text" value={userId} onChange={e => setUserId(e.target.value)} placeholder="ex.25새싹" className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all outline-none" />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-1">입학 학번</label>
+                    <select value={studentYear} onChange={e => setStudentYear(e.target.value)} className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 outline-none">
+                      <option value="25">25학번</option>
+                      <option value="26">26학번</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-1">복수전공</label>
+                    <select value={doubleMajor} onChange={e => setDoubleMajor(e.target.value)} className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 outline-none">
+                      <option value="없음">선택 안함</option>
+                      {Object.keys(DOUBLE_MAJOR_REQUIREMENTS).map(m => <option key={m} value={m}>{m}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <button type="submit" className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3.5 rounded-xl transition-colors shadow-lg shadow-green-200 mt-2">
+                  내 관리함 열기 <i className="fas fa-arrow-right ml-2"></i>
+                </button>
+              </form>
+            </div>
+          </div>
+        );
+      }
+
+      const renderProgressBar = (label, current, max, colorClass) => {
+        const percent = Math.min(100, Math.round((current / max) * 100)) || 0;
+        return (
+          <div className="mb-4 last:mb-0">
+            <div className="flex justify-between text-sm font-medium mb-1.5">
+              <span className="text-gray-700">{label}</span>
+              <span className="text-gray-900">{current} / {max}학점 <span className="text-gray-400 text-xs ml-1">({percent}%)</span></span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
+              <div className={`h-2.5 rounded-full ${colorClass} transition-all duration-500`} style={{ width: `${percent}%` }}></div>
+            </div>
+          </div>
+        );
+      };
+
+      const renderDashboardView = () => {
+        const majorType = doubleMajor === '없음' ? "단일전공" : "복수전공";
+        const envStats = getStats(envCourses, MAJOR_REQUIREMENTS[studentYear][majorType]);
+        const subStats = doubleMajor !== '없음' ? getStats(subCourses, DOUBLE_MAJOR_REQUIREMENTS[doubleMajor]) : null;
+
+        return (
+          <div className="space-y-6" id="dashboard-capture-area">
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+              <div className="flex justify-between items-end mb-6 border-b pb-4">
+                <div>
+                  <h2 className="text-xl font-bold text-gray-800">환경교육과 (주전공)</h2>
+                  <p className="text-sm text-gray-500 mt-1">{studentYear}학번 • {majorType} 기준</p>
+                </div>
+                <div className="text-right">
+                  <div className="text-sm text-gray-500">총 전공 이수</div>
+                  <div className="text-3xl font-bold text-green-600">{envStats.totalEarned}<span className="text-lg text-gray-400">/{envStats.totalReq}</span></div>
+                </div>
+              </div>
+              <div className="grid md:grid-cols-2 gap-x-12 gap-y-4">
+                <div>
+                  {renderProgressBar("전공핵심", envStats.earned.core, envStats.reqs["전공핵심"], "bg-red-500")}
+                  {renderProgressBar("전공선택", envStats.earned.select, envStats.reqs["전공선택"], "bg-blue-500")}
+                </div>
+                <div>
+                  {renderProgressBar("기본이수과목", envStats.earned.basic, envStats.reqs["기본이수과목"], "bg-purple-500")}
+                  {renderProgressBar("교과교육학", envStats.earned.edu, envStats.reqs["교과교육학"], "bg-orange-500")}
+                </div>
+              </div>
+            </div>
+
+            {subStats && (
+              <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                <div className="flex justify-between items-end mb-6 border-b pb-4">
+                  <div>
+                    <h2 className="text-xl font-bold text-gray-800">{doubleMajor} (복수전공)</h2>
+                    <p className="text-sm text-gray-500 mt-1">이수 현황</p>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm text-gray-500">총 전공 이수</div>
+                    <div className="text-3xl font-bold text-indigo-600">{subStats.totalEarned}<span className="text-lg text-gray-400">/{subStats.totalReq}</span></div>
+                  </div>
+                </div>
+                <div className="grid md:grid-cols-2 gap-x-12 gap-y-4">
+                  <div>
+                    {renderProgressBar("전공핵심", subStats.earned.core, subStats.reqs["전공핵심"], "bg-red-500")}
+                    {renderProgressBar("전공선택", subStats.earned.select, subStats.reqs["전공선택"], "bg-blue-500")}
+                  </div>
+                  <div>
+                    {renderProgressBar("기본이수과목", subStats.earned.basic, subStats.reqs["기본이수과목"], "bg-purple-500")}
+                    {renderProgressBar("교과교육학", subStats.earned.edu, subStats.reqs["교과교육학"], "bg-orange-500")}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      };
+
+      const renderRoadmapView = () => {
+        const uncompletedEnv = envCourses.filter(c => !completedCourses[c.id]);
+        const uncompletedSub = subCourses.filter(c => !completedCourses[c.id]);
+        const allUncompleted = [...uncompletedEnv, ...uncompletedSub];
+        
+        const semesters = ["1-1", "1-2", "2-1", "2-2", "3-1", "3-2", "4-1", "4-2"];
+        const unassignedCourses = allUncompleted.filter(c => !plannedCourses[c.id] || plannedCourses[c.id] === "unassigned");
+        
+        return (
+          <div className="flex flex-col gap-6">
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+              <div className="flex justify-between items-center mb-4">
+                <div>
+                  <h2 className="text-xl font-bold text-gray-800">미배치 과목 모음집</h2>
+                  <p className="text-sm text-gray-500 mt-1">아래 카드를 마우스로 꾹 눌러서(드래그) 원하는 학기에 놓아보세요.</p>
+                </div>
+                <div className="text-sm bg-red-50 text-red-600 px-3 py-1 rounded-full font-bold border border-red-100">
+                  남은 과목: {unassignedCourses.length}개
+                </div>
+              </div>
+              
+              <div 
+                className="flex gap-4 overflow-x-auto pb-4 pt-2 px-2 border-2 border-dashed border-gray-200 rounded-xl min-h-[180px] bg-gray-50 transition-colors custom-scrollbar"
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={(e) => handleDrop(e, "unassigned")}
+              >
+                {unassignedCourses.length === 0 ? (
+                  <div className="m-auto text-gray-400 font-medium pointer-events-none">모든 과목이 배치되었습니다 🎉</div>
+                ) : (
+                  unassignedCourses.map(c => renderCourseCard(c, true))
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {semesters.map(sem => {
+                const plans = allUncompleted.filter(c => plannedCourses[c.id] === sem);
+                let credits = plans.reduce((acc, c) => acc + c.credits, 0);
+                return (
+                  <div 
+                    key={sem} 
+                    className="bg-white rounded-xl p-4 border-2 border-gray-100 flex flex-col h-[420px] shadow-sm transition-colors"
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={(e) => handleDrop(e, sem)}
+                  >
+                    <div className="flex justify-between items-center mb-4 pb-2 border-b border-gray-100 pointer-events-none">
+                      <h3 className="font-bold text-gray-700">{sem[0]}학년 {sem[2]}학기</h3>
+                      <span className="text-xs font-bold bg-green-100 text-green-700 px-2 py-1 rounded-full">{credits}학점</span>
+                    </div>
+                    <div className="flex flex-col gap-3 overflow-y-auto custom-scrollbar pr-1 flex-1">
+                      {plans.length === 0 ? (
+                        <div className="text-center text-gray-300 text-sm py-12 pointer-events-none">여기로 과목 끌어다 놓기</div>
+                      ) : (
+                        plans.map(c => renderCourseCard(c, true))
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      };
+
+      return (
+        <div className="min-h-screen flex flex-col">
+          <header className="bg-white shadow-sm sticky top-0 z-50">
+            <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-green-500 text-white rounded-lg flex items-center justify-center text-xl shadow-md">
+                  <i className="fas fa-graduation-cap"></i>
+                </div>
+                <div>
+                  <h1 className="text-xl font-bold text-gray-800">졸업 이수 관리</h1>
+                  <p className="text-xs text-gray-500">{userId}님의 공간 • {studentYear}학번 {doubleMajor !== '없음' ? `• 복수전공: ${doubleMajor}` : '• 단일전공'}</p>
+                </div>
+              </div>
+              <div className="flex gap-2 w-full sm:w-auto">
+                <button onClick={() => { localStorage.removeItem(`edu_tracker_${userId}`); window.location.reload(); }} className="text-sm bg-gray-100 hover:bg-gray-200 text-gray-600 px-3 py-2 rounded-lg font-medium transition-colors flex-1 sm:flex-none">
+                  <i className="fas fa-sign-out-alt mr-1"></i>로그아웃
+                </button>
+                {activeTab === 'dashboard' && (
+                  <button onClick={captureDashboard} className="text-sm bg-blue-50 hover:bg-blue-100 text-blue-600 px-3 py-2 rounded-lg font-medium transition-colors border border-blue-200 flex-1 sm:flex-none">
+                    <i className="fas fa-camera mr-1"></i>대시보드 캡처
+                  </button>
+                )}
+              </div>
+            </div>
+            <div className="max-w-7xl mx-auto px-4 flex gap-1 overflow-x-auto pb-2 custom-scrollbar">
+              <button onClick={() => setActiveTab('dashboard')} className={`px-4 py-2 rounded-t-lg font-bold text-sm whitespace-nowrap transition-colors ${activeTab === 'dashboard' ? 'bg-green-50 text-green-700 border-b-2 border-green-600' : 'text-gray-500 hover:bg-gray-50'}`}>요약 대시보드</button>
+              <button onClick={() => setActiveTab('env')} className={`px-4 py-2 rounded-t-lg font-bold text-sm whitespace-nowrap transition-colors ${activeTab === 'env' ? 'bg-green-50 text-green-700 border-b-2 border-green-600' : 'text-gray-500 hover:bg-gray-50'}`}>환경교육과 수강체크</button>
+              {doubleMajor !== '없음' && (
+                <button onClick={() => setActiveTab('sub')} className={`px-4 py-2 rounded-t-lg font-bold text-sm whitespace-nowrap transition-colors ${activeTab === 'sub' ? 'bg-green-50 text-green-700 border-b-2 border-green-600' : 'text-gray-500 hover:bg-gray-50'}`}>{doubleMajor} 수강체크</button>
+              )}
+              <button onClick={() => setActiveTab('roadmap')} className={`px-4 py-2 rounded-t-lg font-bold text-sm whitespace-nowrap transition-colors ${activeTab === 'roadmap' ? 'bg-green-50 text-green-700 border-b-2 border-green-600' : 'text-gray-500 hover:bg-gray-50'}`}>학기별 로드맵 (시뮬레이터)</button>
+            </div>
+          </header>
+
+          <main className="flex-1 max-w-7xl mx-auto w-full px-4 py-6">
+            {activeTab === 'dashboard' && renderDashboardView()}
+            {activeTab === 'roadmap' && renderRoadmapView()}
+            
+            {(activeTab === 'env' || activeTab === 'sub') && (
+              <div className="space-y-4">
+                <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-wrap gap-3 items-center">
+                  <div className="flex-1 min-w-[200px] relative">
+                    <i className="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                    <input type="text" placeholder="과목명 검색..." className="w-full pl-9 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 outline-none text-sm" onChange={e => setFilter({ ...filter, name: e.target.value })} />
+                  </div>
+                  <select className="border rounded-lg px-3 py-2 text-sm bg-gray-50 outline-none focus:border-green-500" onChange={e => setFilter({ ...filter, year: e.target.value })}>
+                    <option value="all">전체 학년</option><option value="1">1학년</option><option value="2">2학년</option><option value="3">3학년</option><option value="4">4학년</option>
+                  </select>
+                  <select className="border rounded-lg px-3 py-2 text-sm bg-gray-50 outline-none focus:border-green-500" onChange={e => setFilter({ ...filter, semester: e.target.value })}>
+                    <option value="all">전체 학기</option><option value="1">1학기</option><option value="2">2학기</option>
+                  </select>
+                  <select className="border rounded-lg px-3 py-2 text-sm bg-gray-50 outline-none focus:border-green-500" onChange={e => setFilter({ ...filter, type: e.target.value })}>
+                    <option value="all">구분 전체</option><option value="전공핵심">전공핵심</option><option value="전공선택">전공선택</option><option value="기본이수">기본이수과목</option><option value="교과교육">교과교육학</option>
+                  </select>
+                  <select className="border rounded-lg px-3 py-2 text-sm bg-gray-50 outline-none focus:border-green-500" onChange={e => setFilter({ ...filter, status: e.target.value })}>
+                    <option value="all">이수 상태 전체</option><option value="completed">이수 완료</option><option value="uncompleted">미이수</option>
+                  </select>
+                </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {(activeTab === 'env' ? filteredEnv : filteredSub).map(c => renderCourseCard(c, false))}
+                </div>
+                {(activeTab === 'env' ? filteredEnv : filteredSub).length === 0 && (
+                  <div className="text-center py-12 text-gray-500 bg-white rounded-xl border border-gray-100">조건에 맞는 과목이 없습니다.</div>
+                )}
+              </div>
+            )}
+          </main>
+
+          <footer className="mt-auto bg-gray-800 text-gray-300 py-6 text-xs leading-relaxed w-full">
+            <div className="max-w-7xl mx-auto px-4 break-keep">
+              <p className="font-bold text-gray-100 mb-2">본 웹은 학과 사이트에 게시된 최신 교육과정을 게시했습니다.</p>
+              <ul className="space-y-1 opacity-80">
+                <li>25학번 환경교육과 전공: 2025학년도 교육과정 편성표</li>
+                <li>26학번 환경교육과 전공: 2026학년도 교육과정 편성표</li>
+                <li>25학번 문헌정보교육과 전공: 2021학년도 입학자 적용(2022학년도 개편)</li>
+                <li>25학번 지구과학교육과 전공: 2021~2024적용 교육과정 편성표</li>
+                <li>25학번 생물교육과 전공: 2021학년교육과정-교육과정편성표</li>
+                <li>25학번 영어교육과 전공: 2025학년도 교육과정(2025학년도 입학자 적용)</li>
+                <li>25학번 기술가정교육과 전공: 2024~2025학년도 입학자 적용 학점구성표 및 교육과정 편성표</li>
+              </ul>
+            </div>
+          </footer>
+        </div>
+      );
+    };
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+
+  <style>
+    .custom-scrollbar::-webkit-scrollbar { height: 6px; width: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+  </style>
+</body>
+</html>
