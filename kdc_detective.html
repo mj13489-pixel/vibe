@@ -1,0 +1,1391 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KDC 책방수사대 (KDC Book Detective) - 도서관 십진분류 추리 게임</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- React 18, ReactDOM, Babel Standalone -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- Google Fonts: Pretendard -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Pretendard', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'Roboto', 'sans-serif'],
+          },
+          colors: {
+            slate: {
+              750: '#293548',
+              850: '#152033',
+              950: '#060b14',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #060b14;
+      color: #f1f5f9;
+      font-family: 'Pretendard', -apple-system, sans-serif;
+      overflow-x: hidden;
+    }
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #475569;
+    }
+
+    @keyframes pulse-slow {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    .animate-pulse-slow {
+      animation: pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-8px); }
+      40%, 80% { transform: translateX(8px); }
+    }
+    .shake-error {
+      animation: shake 0.4s ease-in-out;
+    }
+
+    @keyframes pop-up {
+      0% { transform: scale(0.9) translateY(20px); opacity: 0; }
+      100% { transform: scale(1) translateY(0); opacity: 1; }
+    }
+    .animate-pop-up {
+      animation: pop-up 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen">
+  <div id="root"></div>
+
+  <!-- Main Game Script (Babel compiled) -->
+  <script type="text/babel">
+    const { useState, useEffect, useRef, useMemo } = React;
+
+    // --- Web Audio Synthesizer (Defensive & Robust) ---
+    class SoundSynthesizer {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+      }
+      initContext() {
+        try {
+          if (!this.ctx && typeof window !== 'undefined') {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (AudioCtx) this.ctx = new AudioCtx();
+          }
+          if (this.ctx && this.ctx.state === 'suspended') {
+            this.ctx.resume().catch(() => {});
+          }
+        } catch (e) {}
+      }
+      toggle(enabled) {
+        this.enabled = enabled;
+        if (enabled) this.initContext();
+      }
+      playTick() {
+        if (!this.enabled) return;
+        try {
+          this.initContext();
+          if (!this.ctx) return;
+          const now = this.ctx.currentTime;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(800, now);
+          osc.frequency.exponentialRampToValueAtTime(100, now + 0.05);
+          gain.gain.setValueAtTime(0.04, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(now + 0.06);
+        } catch (e) {}
+      }
+      playCorrect() {
+        if (!this.enabled) return;
+        try {
+          this.initContext();
+          if (!this.ctx) return;
+          const now = this.ctx.currentTime;
+          const notes = [523.25, 783.99, 1046.50];
+          notes.forEach((freq, index) => {
+            if (!this.ctx) return;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, now + index * 0.08);
+            gain.gain.setValueAtTime(0.12, now + index * 0.08);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + index * 0.08 + 0.2);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(now + index * 0.08);
+            osc.stop(now + index * 0.08 + 0.25);
+          });
+        } catch (e) {}
+      }
+      playWrong() {
+        if (!this.enabled) return;
+        try {
+          this.initContext();
+          if (!this.ctx) return;
+          const now = this.ctx.currentTime;
+          const osc1 = this.ctx.createOscillator();
+          const osc2 = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc1.type = 'sawtooth';
+          osc1.frequency.setValueAtTime(180, now);
+          osc1.frequency.linearRampToValueAtTime(90, now + 0.3);
+          osc2.type = 'square';
+          osc2.frequency.setValueAtTime(177, now);
+          osc2.frequency.linearRampToValueAtTime(88, now + 0.3);
+          gain.gain.setValueAtTime(0.1, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+          osc1.connect(gain);
+          osc2.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc1.start();
+          osc2.start();
+          osc1.stop(now + 0.4);
+          osc2.stop(now + 0.4);
+        } catch (e) {}
+      }
+      playCombo(comboCount) {
+        if (!this.enabled) return;
+        try {
+          this.initContext();
+          if (!this.ctx) return;
+          const now = this.ctx.currentTime;
+          const baseFreq = 440 + Math.min(comboCount, 10) * 110;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(baseFreq, now);
+          osc.frequency.exponentialRampToValueAtTime(baseFreq * 1.5, now + 0.25);
+          gain.gain.setValueAtTime(0.08, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(now + 0.3);
+        } catch (e) {}
+      }
+      playVictory() {
+        if (!this.enabled) return;
+        try {
+          this.initContext();
+          if (!this.ctx) return;
+          const now = this.ctx.currentTime;
+          const melody = [261.63, 329.63, 392.00, 523.25, 659.25, 783.99, 1046.50];
+          melody.forEach((freq, index) => {
+            if (!this.ctx) return;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            const isLast = index === melody.length - 1;
+            const duration = isLast ? 0.6 : 0.15;
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, now + index * 0.1);
+            gain.gain.setValueAtTime(0.1, now + index * 0.1);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + index * 0.1 + duration);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(now + index * 0.1);
+            osc.stop(now + index * 0.1 + duration + 0.05);
+          });
+        } catch (e) {}
+      }
+      playTap() {
+        if (!this.enabled) return;
+        try {
+          this.initContext();
+          if (!this.ctx) return;
+          const now = this.ctx.currentTime;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(400, now);
+          gain.gain.setValueAtTime(0.05, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(now + 0.1);
+        } catch (e) {}
+      }
+    }
+    const sfx = new SoundSynthesizer();
+
+    // --- Error Boundary Component ---
+    class ErrorBoundary extends React.Component {
+      constructor(props) {
+        super(props);
+        this.state = { hasError: false, error: null };
+      }
+      static getDerivedStateFromError(error) {
+        return { hasError: true, error };
+      }
+      componentDidCatch(error, errorInfo) {
+        console.error("ErrorBoundary caught error:", error, errorInfo);
+      }
+      render() {
+        if (this.state.hasError) {
+          return (
+            <div className="min-h-screen bg-slate-950 text-white flex flex-col items-center justify-center p-6 text-center">
+              <div className="w-16 h-16 rounded-2xl bg-rose-500/20 border border-rose-500/40 text-rose-400 flex items-center justify-center mb-4 text-3xl">
+                ⚠️
+              </div>
+              <h2 className="text-xl font-black text-rose-400">화면을 표시하는 중 문제가 발생했습니다</h2>
+              <p className="text-xs text-slate-400 mt-2 max-w-sm">
+                잠시 후 다시 시도하거나 처음 화면으로 돌아가 주세요.
+              </p>
+              <button
+                onClick={() => window.location.reload()}
+                className="mt-6 px-6 py-3 bg-gradient-to-r from-pink-500 to-indigo-500 rounded-xl font-bold text-xs uppercase tracking-wider text-white shadow-lg cursor-pointer hover:scale-105 active:scale-95"
+              >
+                게임 새로고침 🔄
+              </button>
+            </div>
+          );
+        }
+        return this.props.children;
+      }
+    }
+
+    // --- Standalone SVG Icons ---
+    const Icon = ({ name, className = "w-5 h-5", style = {} }) => {
+      const icons = {
+        GraduationCap: <svg className={className} style={style} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>,
+        BookOpen: <svg className={className} style={style} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>,
+        Shield: <svg className={className} style={style} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
+        Play: <svg className={className} style={style} viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="1"><polygon points="5 3 19 12 5 21 5 3"/></svg>,
+        Pause: <svg className={className} style={style} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>,
+        Volume2: <svg className={className} style={style} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>,
+        VolumeX: <svg className={className} style={style} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>,
+        Sparkles: <svg className={className} style={style} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4M3 5h4M19 17v4M17 19h4"/></svg>,
+        Flame: <svg className={className} style={style} viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>,
+        Target: <svg className={className} style={style} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>,
+        Trophy: <svg className={className} style={style} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>,
+        RotateCcw: <svg className={className} style={style} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>,
+        Share2: <svg className={className} style={style} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>,
+        CheckCircle2: <svg className={className} style={style} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>,
+        XCircle: <svg className={className} style={style} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>,
+        Search: <svg className={className} style={style} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>,
+        X: <svg className={className} style={style} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>,
+        Lightbulb: <svg className={className} style={style} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>,
+        Eye: <svg className={className} style={style} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>,
+        AlertCircle: <svg className={className} style={style} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>,
+        FolderTree: <svg className={className} style={style} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 10a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1h-2.5a1 1 0 0 1-.8-.4l-.9-1.2A1 1 0 0 0 15 3h-2a1 1 0 0 0-1 1v5a1 1 0 0 0 1 1Z"/><path d="M20 21a1 1 0 0 0 1-1v-3a1 1 0 0 0-1-1h-2.9a1 1 0 0 1-.88-.53l-.44-.88A1 1 0 0 0 15 14h-2a1 1 0 0 0-1 1v5a1 1 0 0 0 1 1Z"/><path d="M3 3v18h7"/></svg>,
+        Brain: <svg className={className} style={style} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 4.44-2.04Z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-4.44-2.04Z"/></svg>,
+        Compass: <svg className={className} style={style} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>,
+        Users: <svg className={className} style={style} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
+        Atom: <svg className={className} style={style} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1"/><path d="M20.2 20.2c2.04-2.03.02-7.36-4.5-11.9-4.54-4.52-9.87-6.54-11.9-4.5-2.04 2.03-.02 7.36 4.5 11.9 4.54 4.52 9.87 6.54 11.9 4.5Z"/><path d="M15.7 8.3c4.52-4.54 6.54-9.87 4.5-11.9-2.03-2.04-7.36-.02-11.9 4.5-4.52 4.54-6.54 9.87-4.5 11.9 2.03 2.04 7.36.02 11.9-4.5Z"/></svg>,
+        Cpu: <svg className={className} style={style} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="16" height="16" x="4" y="4" rx="2"/><rect width="6" height="6" x="9" y="9" rx="1"/><path d="M15 2v2M9 2v2M20 15h2M20 9h2M9 20v2M15 20v2M2 9h2M2 15h2"/></svg>,
+        Palette: <svg className={className} style={style} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>,
+        Languages: <svg className={className} style={style} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></svg>,
+        Globe: <svg className={className} style={style} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+      };
+      return icons[name] || icons.BookOpen;
+    };
+
+    // --- KDC Master Data ---
+    const KDC_CATEGORIES = [
+      { code: '000', name: '총류', englishName: 'General Works', accentColor: '#10b981', icon: 'FolderTree', description: '컴퓨터, 인공지능, 도서관, 백과사전, 일반 지식 등', keywords: ['컴퓨터', 'IT', '도서관', '백과사전', '빅데이터', '정보'] },
+      { code: '100', name: '철학', englishName: 'Philosophy', accentColor: '#6366f1', icon: 'Brain', description: '심리학, MBTI, 윤리학, 명언, 나는 누구일까?, 생각하는 방법', keywords: ['심리', '생각', '마음', '공자', '인생', 'MBTI', '고민', '윤리'] },
+      { code: '200', name: '종교', englishName: 'Religion', accentColor: '#f59e0b', icon: 'Compass', description: '그리스 로마 신화, 한국 설화, 불교, 기독교, 요괴, 천사', keywords: ['신화', '전설', '성경', '불경', '신앙', '절', '교회', '요괴'] },
+      { code: '300', name: '사회과학', englishName: 'Social Sciences', accentColor: '#3b82f6', icon: 'Users', description: '돈/용돈공부, 경제, 사회, 법, 법원, 선거와 정치, 우리 학교 생활', keywords: ['정치', '경제', '법률', '사회', '용돈', '선거', '헌법', '인권'] },
+      { code: '400', name: '자연과학', englishName: 'Natural Sciences', accentColor: '#14b8a6', icon: 'Atom', description: '수학, 우주/천문학, 곤충, 동식물 리포트, 물리학, 화학 실험', keywords: ['수학', '우주', '식물', '동물', '곤충', '공룡', '블랙홀', '화학'] },
+      { code: '500', name: '기술과학', englishName: 'Technology', accentColor: '#f97316', icon: 'Cpu', description: '의학, 내 몸의 비밀, 요리/레시피, 기계 자동차, 우주선, 발명품', keywords: ['의학', '요리', '레시피', '기계', '엔진', '발명', '식품', '건축'] },
+      { code: '600', name: '예술', englishName: 'Arts', accentColor: '#ec4899', icon: 'Palette', description: '웹툰 작가, 미술 창작, 작곡, 바이올린, 축구/농구 등 스포츠, 사진', keywords: ['만화', '웹툰', '미술', '그림', '음악', 'K-POP', '축구', '스포츠'] },
+      { code: '700', name: '언어', englishName: 'Language', accentColor: '#06b6d4', icon: 'Languages', description: '맞춤법, 띄어쓰기, 영단어 하이패스, 중국어, 한자 상식, 회화', keywords: ['맞춤법', '영어', '영단어', '문법', '중국어', '한자', '말하기'] },
+      { code: '800', name: '문학', englishName: 'Literature', accentColor: '#f43f5e', icon: 'BookOpen', description: '소나기 소설, 해리포터 판타지, 수필, 시 감상, 동화, 희곡 연극', keywords: ['소설', '희곡', '수필', '시집', '문학', '어린왕자', '판타지'] },
+      { code: '900', name: '역사', englishName: 'History ＆ Geography', accentColor: '#a16207', icon: 'Globe', description: '조선 왕조 역사, 삼국지, 세계사, 아프리카 지리, 안중근 위인전', keywords: ['역사', '조선', '왕조', '삼국', '세계사', '지도', '지리', '위인전'] }
+    ];
+
+    const BOOKS = [
+      { id: 'b1', title: '인공지능의 비밀: Chat GPT는 어떻게 영리해졌을까?', author: '김코딩', categoryCode: '000', description: '인공지능, 빅데이터, 컴퓨터 과학 기술을 알기 쉽게 풀어쓴 설명서.' },
+      { id: 'b2', title: '이것도 몰랐지? 십대를 위한 상식 백과사전', author: '박박사', categoryCode: '000', description: '세상의 수많은 궁금증을 명쾌하게 해결해 주는 유용한 일반 참고 정보 책.' },
+      { id: 'b3', title: '미디어 리터러시 탈출기: 가짜 뉴스를 찾아내라!', author: '이팩트', categoryCode: '000', description: '유튜브와 뉴스의 정보들 속에서 진짜 사실을 구별하는 리터러시 훈련 가이드.' },
+      { id: 'b4', title: '미래 도서관 탐험: 디지털 아카이브와 분류의 기적', author: '지식인', categoryCode: '000', description: '도서관은 어떻게 구성되고 책들은 어떻게 제자리를 찾는지 알아보는 도서관학 비밀.' },
+      { id: 'b5', title: '나의 첫 MBTI 분석: 16가지 유형으로 탐구하는 진짜 나', author: '심리원', categoryCode: '100', description: '친구들의 심리와 내 성격을 과학적으로 비교 연구해보는 재미있는 심리학 입문책.' },
+      { id: 'b6', title: '왜 거짓말하면 안 돼요? 생각의 힘을 키우는 10대 윤리학', author: '칸트형', categoryCode: '100', description: '인간은 무엇으로 사는가? 일상 속 도덕적 선택들에 대한 심오한 윤리 가이드.' },
+      { id: 'b7', title: '사춘기 극복 프로젝트: 내 감정을 조절하는 마인드 컨트롤', author: '사춘맘', categoryCode: '100', description: '감정의 롤러코스터 속에서 평온함과 멘탈 관리를 유지할 수 있는 심리 치유서.' },
+      { id: 'b8', title: '세상을 바꾼 철학자들의 끝장 토론 배틀', author: '소크라', categoryCode: '100', description: '소크라테스부터 데카르트까지 위대한 사상가들이 마주쳐 지혜를 겨루는 교양서.' },
+      { id: 'b9', title: '그리스 로마 신화 마스터: 올림포스 12신 종합 리포트', author: '제우스', categoryCode: '200', description: '하늘의 신 제우스부터 헤라까지 서양 예술과 문화의 뿌리 깊은 올림포스 신화집.' },
+      { id: 'b10', title: '단군 신화부터 전우치까지: 흥미진진 한국 민간 설화', author: '웅녀씨', categoryCode: '200', description: '곰이 마늘을 먹고 사람이 된 사연처럼 오랜 조상들이 품었던 전통 신앙 및 토속 설화.' },
+      { id: 'b11', title: '세계의 3대 종교 가이드: 불교, 기독교, 이슬람은 왜 생겼을까?', author: '종교학', categoryCode: '200', description: '석가모니, 예수, 무함마드의 삶과 가르침을 통해 문화 차이를 이해하는 비교 종교서.' },
+      { id: 'b12', title: '요괴 백과사전: 동서양 전설 속 최강 몬스터 도감', author: '고스트', categoryCode: '200', description: '구미호, 뱀파이어, 천사 등 신앙과 고대 신비주의 속 미스터리 크리처 도감.' },
+      { id: 'b13', title: '돈을 지배하는 용돈 관리법: 10대를 위한 금융 자산 공부', author: '리치맨', categoryCode: '300', description: '용돈 기입장 쓰기부터 저축의 마법, 주식과 물가의 흐름까지 쉽게 알려주는 경제 교과서.' },
+      { id: 'b14', title: '교실 속에 숨겨진 작은 헌법: 법과 인권 수호단', author: '솔로몬', categoryCode: '300', description: '우리 반 규칙은 헌법과 어떻게 다를까? 법원, 국회, 청소년 인권에 관한 사회학습서.' },
+      { id: 'b15', title: '나도 유튜버! 1인 크리에이터와 초상권 비밀 수첩', author: '마플봇', categoryCode: '300', description: '영상을 인터넷에 올릴 때 지켜야 할 저작권 규칙과 사회적 의무 및 도덕 상식.' },
+      { id: 'b16', title: '민주주의와 선거 배틀: 내 소중한 한 표의 힘', author: '민주수', categoryCode: '300', description: '대통령 선거, 국회의원 선거의 공정한 과정과 국가 정치 및 투표의 원리.' },
+      { id: 'b17', title: '수학 귀신과 함께하는 꿀잼 미스터리 분수 전쟁', author: '베르너', categoryCode: '400', description: '수학을 힘들어하는 학생들을 위해 신나고 놀랍게 대칭과 기하학을 풀어낸 도서.' },
+      { id: 'b18', title: '오리진 블랙홀: 은하수 끝에서 펼쳐지는 천문학 여행', author: '허블망', categoryCode: '400', description: '우주의 크기는 얼마나 클까? 태양계 행성들과 함께 밝혀내는 신비로운 천문학 리포트.' },
+      { id: 'b19', title: '주라기 월드의 조상들: 화석으로 마스터하는 공룡 백과', author: '티라노', categoryCode: '400', description: '수억 년 전 한반도와 세계 각지를 누비던 거대 파충류와 공룡들의 생태 이야기.' },
+      { id: 'b20', title: 'SF 슈퍼히어로 속에 숨겨진 최신 전자기학', author: '아인형', categoryCode: '400', description: '빛보다 빠른 속도와 자력의 초능력을 상대성이론과 전자기 원리로 실험해보는 서적.' },
+      { id: 'b21', title: '슬기로운 초보 요리사: 부엌 안에서 시작하는 꿀맛 레시피', author: '백쉐프', categoryCode: '500', description: '불조절 노하우, 재료 보관 가이드, 초간단 볶음밥과 파스타 홈 베이킹 주방 요리책.' },
+      { id: 'b22', title: '내 몸 사용 설명서: 세포부터 혈관까지의 해부학 캠프', author: '허준후', categoryCode: '500', description: '심장은 어떻게 지치지 않고 뛸까? 청소년의 신체 성장과 의학 영양 해부학책.' },
+      { id: 'b23', title: '로봇 강화 슈트는 가능할까? 일상 속 기발한 최첨단 공학 발명품', author: '에디슨', categoryCode: '500', description: '세바퀴 전기차부터 우주 엘리베이터까지, 현실성 풍부한 차세대 발명 공학사.' },
+      { id: 'b24', title: '초고층 마천루 건설 공학: 무너지지 않는 랜드마크의 비밀', author: '빌드업', categoryCode: '500', description: '바람과 진동을 버티는 설계부터 스마트 빌딩 엔지니어링을 탐독하는 건축 과학.' },
+      { id: 'b25', title: '웹툰 작가 무작정 따라하기: 클립 스튜디오로 그리는 나만의 캐릭터', author: '김만화', categoryCode: '600', description: '빛나는 눈동자 그리기부터 컷 나누기와 액션 연출 비법을 마스터하는 웹툰 일러스트서.' },
+      { id: 'b26', title: '손흥민처럼 가볍게 날아라! 10대를 위한 축구 전술 대백과', author: '메시골', categoryCode: '600', description: '수비 압박을 피하는 드리블, 슈팅 각도, 스포츠 정신을 전술 그림과 함께 보는 체육서.' },
+      { id: 'b27', title: '쇼팽과 친구들의 방구석 클래식 살롱 콘서트', author: '모차르', categoryCode: '600', description: '모차르트, 베토벤의 대표곡들을 만화 에피소드로 구성해 악기와 오페라를 만나는 음악집.' },
+      { id: 'b28', title: '미쟝센과 컷의 미학: 영화 감독들이 알려주는 촬영 명장면의 연출 기법', author: '봉감독', categoryCode: '600', description: '카메라 조명 기술과 주인공의 심리를 극적으로 강조하는 예술적 필름 감상법.' },
+      { id: 'b29', title: '외계어 쓰는 내 친구 소환하기: 올바른 한글 맞춤법 비밀 노트', author: '세종쌤', categoryCode: '700', description: '되/돼 구분하기, 어이없다 등 메신저 맞춤법 실수를 시원하게 고쳐주는 우리말 어학서.' },
+      { id: 'b30', title: '영단어 암기 하이패스: 레벨 게임으로 클리어하는 필수 영단어 1000', author: '해리쌤', categoryCode: '700', description: '단순 반복 쓰기 암기는 그만! 음성 법칙으로 외우는 신기한 소리 연상 영어 학습법.' },
+      { id: 'b31', title: '교양 있는 대화를 위한 필수 사자성어와 핵심 한자 사전', author: '학자수', categoryCode: '700', description: '네 자 속 숨은 명화 이야기를 듣다 보면 지혜와 작문 실력이 쌓이는 청소년 언어 총서.' },
+      { id: 'b32', title: '글로벌 청소년 여행자가 전수하는 기적의 10문장 만능 일어·회화', author: '글로벌', categoryCode: '700', description: '원어민과 바로 통하는 일본어·프랑스어·스페인어 기초 여행 회화 가이드.' },
+      { id: 'b33', title: '여름날의 추억: 서정적인 청소년 단편 문학선', author: '문학소년', categoryCode: '800', description: '한여름 소년 소녀의 풋풋한 기억과 감성을 담은 한국 대표 청소년 서정 문학 소설.' },
+      { id: 'b34', title: '마법 학교의 비밀 시계탑: 판타지 모험 대서사시', author: '환상작가', categoryCode: '800', description: '하늘을 나는 빗자루와 지하실 음모를 파헤치는 판타지 환상 모험 소설의 모험담.' },
+      { id: 'b35', title: '별빛 소년의 여행: 보이지 않는 소중함을 담은 감성 수필', author: '은하수', categoryCode: '800', description: '사막에서 만난 소년의 순수한 시선을 통해 소중한 가치를 탐구하는 산문 수필집.' },
+      { id: 'b36', title: '연극 무대에 서라! 10대를 장식하는 창작 주말 청소년 희곡 모음집', author: '드라마', categoryCode: '800', description: '학교 동아리 축제를 위한 생생한 독백과 무대 연출이 담긴 연극 대본 모음집.' },
+      { id: 'b37', title: '조선 왕들의 카카오톡 단톡방: 조선왕조실록 인스타툰', author: '태정태세', categoryCode: '900', description: '세종대왕, 이순신 장군 등 영웅들이 메신저에서 대화한다면? 흥미진진 만화 역사서.' },
+      { id: 'b38', title: '하얼빈의 불타는 애국 혼: 안중근 의사 평전 위인 전기', author: '애국인', categoryCode: '900', description: '격동의 시기 조국 독립을 위해 목숨을 바친 안중근 의사의 삶을 복원한 역사 인물 탐구.' },
+      { id: 'b39', title: '구글 어스로 세계 일주: 침대 위에서 끝내는 오대양 지리 탐사', author: '마젤란', categoryCode: '900', description: '에펠탑부터 사하라 사막까지 3D 지도를 활용해 떠나는 비대면 인류 지리 기행집.' },
+      { id: 'b40', title: '동아시아 영토 분쟁의 어제와 오늘: 독도와 역사 왜곡 타파', author: '동해인', categoryCode: '900', description: '독도가 대한민국의 땅인 삼국시대 고문서 근거와 역사의 타당성을 밝힌 영토 역사학서.' }
+    ];
+
+    const DETECTIVE_RANKS = [
+      { level: 1, title: '꼬마 도서관 견습생 🧹', minScore: 0, colorClass: 'text-slate-400 bg-slate-800', quote: '책 정리가 아직 낯설어 빗자루를 먼저 잡았네요! KDC 코드를 조금만 더 눈여겨보면 멋진 탐정이 될 수 있어요.' },
+      { level: 2, title: '눈썰미 좋은 도서 서기 🧐', minScore: 600, colorClass: 'text-amber-400 bg-amber-950/40', quote: '훌륭합니다! 000에서 900번대 책장의 기본 체계를 신속하게 읽기 시작하셨군요. 이제 실전 수사가 즐거워집니다.' },
+      { level: 3, title: '사건 해결 전문 서적 탐정 🔍', minScore: 1200, colorClass: 'text-cyan-400 bg-cyan-950/40', quote: '명쾌한 추리력! 십대들의 유행 도서마저 단번에 올바른 책장으로 워프시킵니다. 학교 도서관에서 소문난 실력파 수사반장입니다.' },
+      { level: 4, title: '전설의 라이브러리 마스터 👑', minScore: 2000, colorClass: 'text-rose-400 bg-rose-950/40', quote: '경이로운 통찰력! KDC 분류계의 셜록 홈즈가 등장했습니다. 도서관의 잃어버린 봉인도서 십진법 암호를 단숨에 풀어버린 주인공!' }
+    ];
+
+    const getCategoryEmoji = (code) => {
+      const map = { '000':'💻', '100':'💭', '200':'⛪', '300':'👥', '400':'🔬', '500':'⚙️', '600':'🎨', '700':'🗣️', '800':'📖', '900':'🧭' };
+      return map[code] || '📚';
+    };
+
+    const getCategoryFriendlyKeywords = (code) => {
+      const map = {
+        '000': '컴퓨터 / 지식 / 백과사전',
+        '100': '심리 / 철학 / 자기이해',
+        '200': '신화 / 설화 / 종교',
+        '300': '사회 / 용돈 / 경제 / 법률',
+        '400': '과학 / 수학 / 동물 / 식물',
+        '500': '의학 / 요리 / 발명 / 기술',
+        '600': '미술 / 음악 / 스포츠 / 예술',
+        '700': '영어 / 한국어 / 외국어 / 언어',
+        '800': '시 / 소설 / 수필 / 희곡',
+        '900': '역사 / 지리 / 여행 / 인물'
+      };
+      return map[code] || '일반 도서';
+    };
+
+    // --- Component: Cheat Sheet Modal ---
+    function KdcCheatSheet({ isOpen, onClose }) {
+      const [searchQuery, setSearchQuery] = useState('');
+      if (!isOpen) return null;
+
+      const filtered = KDC_CATEGORIES.filter(cat => 
+        cat.name.includes(searchQuery) || 
+        cat.code.includes(searchQuery) ||
+        cat.description.includes(searchQuery) ||
+        cat.keywords.some(kw => kw.includes(searchQuery))
+      );
+
+      return (
+        <div className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-sm animate-pop-up">
+          <div className="absolute inset-0" onClick={onClose} />
+          <div className="relative w-full max-w-md h-full bg-slate-900 border-l border-slate-800 text-white p-6 shadow-2xl flex flex-col justify-between overflow-hidden z-10">
+            <div>
+              <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+                <div className="flex items-center gap-2">
+                  <Icon name="Lightbulb" className="w-6 h-6 text-yellow-400 animate-pulse" />
+                  <h2 className="text-xl font-bold tracking-tight text-slate-100">KDC 분류 코드 수첩</h2>
+                </div>
+                <button onClick={onClose} className="p-1.5 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 hover:text-rose-400 text-slate-400 font-bold cursor-pointer">
+                  <Icon name="X" className="w-5 h-5 inline" />
+                </button>
+              </div>
+
+              <div className="my-4 p-3 rounded-xl bg-slate-800/50 border border-slate-700/60 text-xs text-slate-300 leading-relaxed">
+                💡 <strong className="text-pink-400 font-medium">검색 꿀팁:</strong> 책 분류를 모를 땐 아래 검색창에 단어를 쳐봐! KDC는 한국의 모든 도서관에서 사용하는 약속이야.
+              </div>
+
+              <div className="relative mb-4">
+                <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
+                  <Icon name="Search" className="w-4 h-4" />
+                </span>
+                <input
+                  type="text"
+                  placeholder="예: 역사, 인공지능, 요리, 심리..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl py-2 px-10 text-sm text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-500"
+                />
+              </div>
+
+              <div className="space-y-3 overflow-y-auto max-h-[60vh] pr-1">
+                {filtered.map(cat => (
+                  <div key={cat.code} className="p-3.5 rounded-xl border border-slate-750 bg-slate-800/40 flex items-start gap-3.5 hover:bg-slate-800/70 transition-colors">
+                    <div className="p-2.5 rounded-xl text-white shrink-0 flex flex-col items-center justify-center w-14 h-14 shadow-md" style={{ backgroundColor: cat.accentColor }}>
+                      <span className="text-xs font-mono font-bold leading-none">{cat.code}</span>
+                      <span className="text-[10px] font-semibold mt-1 truncate w-12 text-center opacity-90">{cat.name}</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-bold text-sm text-slate-100">{cat.code} {cat.name}</h3>
+                        <span className="text-[10px] uppercase font-mono tracking-widest text-slate-400">{cat.englishName}</span>
+                      </div>
+                      <p className="text-xs text-slate-300 mt-1 leading-snug">{cat.description}</p>
+                      <div className="flex flex-wrap gap-1.5 mt-2">
+                        {cat.keywords.map((kw, i) => (
+                          <span key={i} className="px-1.5 py-0.5 rounded text-[10px] bg-slate-800 text-slate-300 font-mono">
+                            #{kw}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="pt-4 border-t border-slate-800 text-[10px] text-slate-400 text-center font-mono">
+              KOREAN DECIMAL CLASSIFICATION SYSTEM — STUDENT MANUAL
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // --- Component: Intro Page ---
+    function IntroPage({ onStart, onOpenCheatSheet }) {
+      const [sound, setSound] = useState(true);
+      const [hints, setHints] = useState(true);
+      const [timeLimit, setTimeLimit] = useState(60);
+
+      const handleStart = () => {
+        sfx.toggle(sound);
+        sfx.playCorrect();
+        onStart({ timeLimit, soundEnabled: sound, hintsEnabled: hints });
+      };
+
+      return (
+        <div className="w-full max-w-xl mx-auto py-2 px-4 text-white flex flex-col justify-between min-h-[80vh]">
+          <div className="text-center my-auto">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-xs text-cyan-400 font-mono mb-4 animate-pulse-slow">
+              <Icon name="Sparkles" className="w-3.5 h-3.5" />
+              <span>대한민국 십진분류법(KDC) 게이미피케이션</span>
+            </div>
+
+            <h1 className="text-4xl md:text-5xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-pink-400 via-purple-300 to-cyan-300 mb-2">
+              KDC 책방수사대
+            </h1>
+            <p className="text-sm md:text-base text-slate-300 max-w-md mx-auto leading-relaxed">
+              사라진 책장의 번호를 찾아라! 도서관에 흩어진 40권의 비밀 도서를 10개 분류함으로 제자리에 워프시키는 직관적인 추리 매칭 퍼즐.
+            </p>
+
+            <div className="mt-6 flex flex-col gap-2.5 max-w-sm mx-auto">
+              <div className="flex items-center justify-between p-3 rounded-xl bg-slate-900/60 border border-slate-800">
+                <span className="text-xs font-bold text-slate-300 flex items-center gap-2">
+                  <Icon name="Target" className="w-4 h-4 text-cyan-400" />
+                  수사 제한 시간
+                </span>
+                <div className="flex gap-1.5">
+                  {[45, 60, 90].map(sec => (
+                    <button
+                      key={sec}
+                      onClick={() => { sfx.playTap(); setTimeLimit(sec); }}
+                      className={`px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer ${timeLimit === sec ? 'bg-cyan-500 text-slate-950 font-black shadow-md' : 'bg-slate-800 text-slate-400 hover:text-white'}`}
+                    >
+                      {sec}초
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between p-3 rounded-xl bg-slate-900/60 border border-slate-800">
+                <span className="text-xs font-bold text-slate-300 flex items-center gap-2">
+                  <Icon name={sound ? "Volume2" : "VolumeX"} className="w-4 h-4 text-pink-400" />
+                  신시사이저 효과음
+                </span>
+                <button
+                  onClick={() => { sfx.playTap(); setSound(!sound); }}
+                  className={`w-12 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors ${sound ? 'bg-pink-500 justify-end' : 'bg-slate-800 justify-start'}`}
+                >
+                  <div className="w-4 h-4 rounded-full bg-white shadow-md transform transition-transform" />
+                </button>
+              </div>
+
+              <button
+                onClick={onOpenCheatSheet}
+                className="w-full p-2.5 rounded-xl border border-dashed border-slate-700/80 hover:border-slate-500 text-xs text-slate-400 hover:text-slate-200 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <Icon name="BookOpen" className="w-3.5 h-3.5" />
+                수사 시작 전에 KDC 분류표 미리 외워보기!
+              </button>
+            </div>
+          </div>
+
+          <div className="w-full mt-6 pb-2">
+            <button
+              onClick={handleStart}
+              className="w-full bg-gradient-to-r from-pink-500 via-purple-600 to-indigo-500 hover:from-pink-400 hover:to-indigo-400 p-4 rounded-2xl font-black text-lg text-white uppercase tracking-wider text-center shadow-[0_0_25px_rgba(236,72,153,0.45)] hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-2"
+            >
+              사건 수사 개시! <Icon name="Play" className="w-5 h-5 fill-white text-white" />
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    // --- Component: Game Play Page (Split 40/60 Screen + 5-Sec Anti-Spoiler Delay + Kinetic Drag & Tap) ---
+    function GamePlayPage({ config, onGameFinished, onOpenCheatSheet, onExitGame }) {
+      const [deck, setDeck] = useState([]);
+      const [currentIdx, setCurrentIdx] = useState(0);
+      const [score, setScore] = useState(0);
+      const [currentCombo, setCurrentCombo] = useState(0);
+      const [maxCombo, setMaxCombo] = useState(0);
+      const [correctCount, setCorrectCount] = useState(0);
+      const [wrongCount, setWrongCount] = useState(0);
+      const [timeRemaining, setTimeRemaining] = useState(config.timeLimit || 60);
+      const [history, setHistory] = useState([]);
+      const [isPaused, setIsPaused] = useState(false);
+      const [isSoundOn, setIsSoundOn] = useState(config.soundEnabled);
+      const [secondsStuck, setSecondsStuck] = useState(0);
+      const [cardFeedback, setCardFeedback] = useState('none');
+      const [particles, setParticles] = useState([]);
+      const [explainPopup, setExplainPopup] = useState(null);
+
+      // Drag State
+      const [isDragging, setIsDragging] = useState(false);
+      const [dragPos, setDragPos] = useState({ x: 0, y: 0 });
+      const dragStartPos = useRef({ x: 0, y: 0 });
+      const hasEndedRef = useRef(false);
+
+      useEffect(() => {
+        const shuffled = [...BOOKS].sort(() => Math.random() - 0.5);
+        setDeck(shuffled);
+        setCurrentIdx(0);
+      }, []);
+
+      useEffect(() => {
+        sfx.toggle(isSoundOn);
+      }, [isSoundOn]);
+
+      // Stuck timer for 5-sec delay
+      useEffect(() => {
+        if (isPaused || explainPopup) return;
+        const interval = setInterval(() => {
+          setSecondsStuck(prev => prev + 1);
+        }, 1000);
+        return () => clearInterval(interval);
+      }, [currentIdx, isPaused, explainPopup]);
+
+      // Main Countdown with game-over protection
+      useEffect(() => {
+        if (isPaused || explainPopup) return;
+        if (timeRemaining <= 0) {
+          if (!hasEndedRef.current) {
+            hasEndedRef.current = true;
+            handleGameOver();
+          }
+          return;
+        }
+        const timer = setInterval(() => {
+          setTimeRemaining(prev => {
+            if (prev <= 1) {
+              clearInterval(timer);
+              return 0;
+            }
+            const next = prev - 1;
+            if (next <= 10 && next > 0) {
+              try { sfx.playTick(); } catch (e) {}
+            }
+            return next;
+          });
+        }, 1000);
+        return () => clearInterval(timer);
+      }, [timeRemaining, isPaused, explainPopup]);
+
+      const handleGameOver = () => {
+        try {
+          sfx.playVictory();
+        } catch (e) {}
+        if (onGameFinished) {
+          onGameFinished({
+            score: score || 0,
+            correctCount: correctCount || 0,
+            wrongCount: wrongCount || 0,
+            maxCombo: Math.max(maxCombo || 0, currentCombo || 0),
+            currentCombo: 0,
+            history: history || [],
+            timeRemaining: 0
+          });
+        }
+      };
+
+      const triggerConfetti = (x, y, color) => {
+        const newParticles = [];
+        for (let i = 0; i < 25; i++) {
+          newParticles.push({
+            id: Math.random() + i,
+            x: x || window.innerWidth / 2,
+            y: y || window.innerHeight * 0.4,
+            color: color || '#f43f5e',
+            angle: Math.random() * Math.PI * 2,
+            speed: 3 + Math.random() * 8,
+            size: 5 + Math.random() * 8
+          });
+        }
+        setParticles(prev => [...prev, ...newParticles]);
+      };
+
+      useEffect(() => {
+        if (particles.length === 0) return;
+        const frame = requestAnimationFrame(() => {
+          setParticles(prev =>
+            prev
+              .map(p => ({
+                ...p,
+                x: p.x + Math.cos(p.angle) * p.speed,
+                y: p.y + Math.sin(p.angle) * p.speed + 0.6,
+                speed: p.speed * 0.95,
+                size: p.size * 0.92
+              }))
+              .filter(p => p.size > 1.2)
+          );
+        });
+        return () => cancelAnimationFrame(frame);
+      }, [particles]);
+
+      const activeBook = deck[currentIdx];
+      const activeCategory = activeBook ? KDC_CATEGORIES.find(c => c.code === activeBook.categoryCode) : null;
+      const isLocked = secondsStuck < 5;
+
+      const gradeAnswer = (selectedCode) => {
+        if (!activeBook || isPaused || explainPopup) return;
+        const correctCode = activeBook.categoryCode;
+        const wasCorrect = selectedCode === correctCode;
+        const correctCategory = KDC_CATEGORIES.find(c => c.code === correctCode);
+
+        setHistory(prev => [...prev, { book: activeBook, isCorrect: wasCorrect, chosenCategoryCode: selectedCode }]);
+
+        if (wasCorrect) {
+          sfx.playCorrect();
+          const newCombo = currentCombo + 1;
+          setCurrentCombo(newCombo);
+          if (newCombo > maxCombo) setMaxCombo(newCombo);
+
+          let points = 100;
+          if (newCombo % 3 === 0) {
+            points += 50 * Math.floor(newCombo / 3);
+            sfx.playCombo(newCombo);
+          }
+          setScore(prev => prev + points);
+          setCorrectCount(prev => prev + 1);
+          setCardFeedback('correct');
+          triggerConfetti(window.innerWidth / 2, window.innerHeight * 0.35, correctCategory ? correctCategory.accentColor : '#10b981');
+
+          setTimeout(() => {
+            setCardFeedback('none');
+            loadNextCard();
+          }, 600);
+        } else {
+          sfx.playWrong();
+          setCurrentCombo(0);
+          setWrongCount(prev => prev + 1);
+          setCardFeedback('wrong');
+
+          const chosenCat = KDC_CATEGORIES.find(c => c.code === selectedCode);
+          setExplainPopup({
+            book: activeBook,
+            chosen: chosenCat ? chosenCat.code + ' ' + chosenCat.name : selectedCode,
+            actual: correctCategory ? correctCategory.code : correctCode,
+            actualName: correctCategory ? correctCategory.name : ''
+          });
+
+          setTimeout(() => setCardFeedback('none'), 600);
+        }
+      };
+
+      const loadNextCard = () => {
+        setExplainPopup(null);
+        setSecondsStuck(0);
+        setCurrentIdx(prev => {
+          if (prev + 1 >= deck.length) {
+            const reshuffled = [...BOOKS].sort(() => Math.random() - 0.5);
+            setDeck(reshuffled);
+            return 0;
+          }
+          return prev + 1;
+        });
+      };
+
+      // Pointer Drag for Interactive Drag-and-Drop
+      const onPointerDown = (e) => {
+        if (cardFeedback !== 'none') return;
+        setIsDragging(true);
+        dragStartPos.current = { x: e.clientX, y: e.clientY };
+        setDragPos({ x: 0, y: 0 });
+      };
+
+      const onPointerMove = (e) => {
+        if (!isDragging) return;
+        setDragPos({
+          x: e.clientX - dragStartPos.current.x,
+          y: e.clientY - dragStartPos.current.y
+        });
+      };
+
+      const onPointerUp = (e) => {
+        if (!isDragging) return;
+        setIsDragging(false);
+
+        const releaseX = e.clientX;
+        const releaseY = e.clientY;
+        let droppedCode = null;
+
+        KDC_CATEGORIES.forEach(cat => {
+          const el = document.getElementById(`kdc-btn-${cat.code}`);
+          if (el) {
+            const rect = el.getBoundingClientRect();
+            if (releaseX >= rect.left && releaseX <= rect.right && releaseY >= rect.top && releaseY <= rect.bottom) {
+              droppedCode = cat.code;
+            }
+          }
+        });
+
+        if (droppedCode) {
+          gradeAnswer(droppedCode);
+        }
+        setDragPos({ x: 0, y: 0 });
+      };
+
+      const formatTime = (sec) => {
+        const m = Math.floor(sec / 60);
+        const s = sec % 60;
+        return `${m}:${s < 10 ? '0' : ''}${s}`;
+      };
+
+      return (
+        <div 
+          className="relative w-screen h-screen text-white flex flex-col justify-between overflow-hidden select-none"
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+        >
+          {/* Confetti Particles */}
+          {particles.map(p => (
+            <div
+              key={p.id}
+              className="fixed rounded-full pointer-events-none z-50 shadow-md"
+              style={{
+                left: p.x,
+                top: p.y,
+                width: p.size,
+                height: p.size,
+                backgroundColor: p.color,
+                transform: 'translate(-50%, -50%)'
+              }}
+            />
+          ))}
+
+          {/* Top Bar Header */}
+          <div className="h-14 px-4 md:px-6 bg-slate-900/60 border-b border-slate-800/80 flex items-center justify-between shrink-0">
+            <div className="flex items-center gap-3">
+              <span className="font-mono text-xs md:text-sm font-bold bg-slate-800 border border-slate-700 px-3 py-1 rounded-xl text-slate-300">
+                수사 {currentIdx + 1} / {deck.length > 0 ? deck.length : 40}
+              </span>
+
+              {currentCombo >= 2 && (
+                <div className="flex items-center gap-1 text-xs font-black text-amber-400 bg-amber-950/60 border border-amber-500/40 px-2.5 py-1 rounded-xl animate-bounce">
+                  <Icon name="Flame" className="w-3.5 h-3.5 fill-amber-400" />
+                  <span>{currentCombo} COMBO!</span>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center gap-4">
+              <div className="text-right">
+                <span className="text-[10px] uppercase font-mono text-slate-400 block leading-tight">SCORE</span>
+                <span className="font-mono font-black text-base md:text-lg text-amber-400 tracking-tight leading-tight block">
+                  {score.toLocaleString()}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => setIsPaused(true)}
+                  className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors cursor-pointer"
+                  title="일시 정지"
+                >
+                  <Icon name="Pause" className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setIsSoundOn(!isSoundOn)}
+                  className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors cursor-pointer"
+                  title="소리 켜기/끄기"
+                >
+                  <Icon name={isSoundOn ? "Volume2" : "VolumeX"} className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Split-Screen 2-Column Main Workspace */}
+          <div className="flex-1 flex flex-col md:flex-row p-3 md:p-4 gap-3 md:gap-4 overflow-hidden min-h-0">
+
+            {/* Left Column (40% Width - Problem & Clue Card) */}
+            <div className="w-full md:w-[40%] h-full flex flex-col justify-between min-h-0">
+              
+              {/* Progress & Timer Block */}
+              <div className="shrink-0 mb-3 bg-slate-900/50 p-3 rounded-2xl border border-slate-800/80 shadow-md">
+                <div className="flex items-center justify-between text-xs font-bold mb-1.5">
+                  <span className="text-slate-400 flex items-center gap-1.5">
+                    <Icon name="Target" className="w-4 h-4 text-cyan-400" />
+                    <span>남은 수사 시간</span>
+                  </span>
+                  <span className={`font-mono text-sm font-extrabold ${timeRemaining <= 10 ? 'text-rose-400 animate-pulse' : 'text-slate-200'}`}>
+                    ⏱️ {formatTime(timeRemaining)}
+                  </span>
+                </div>
+                <div className="w-full bg-slate-950 h-2 rounded-full overflow-hidden p-[1px] border border-slate-800">
+                  <div 
+                    className="h-full rounded-full transition-all duration-1000 bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-400"
+                    style={{ width: `${Math.max(0, (timeRemaining / (config.timeLimit || 60)) * 100)}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Kinetic Drag Card */}
+              <div className="flex-1 flex flex-col justify-center items-center relative min-h-0 my-auto">
+                {activeBook && activeCategory ? (
+                  <div
+                    onPointerDown={onPointerDown}
+                    className={`relative cursor-grab active:cursor-grabbing w-full h-full flex flex-col justify-between shadow-2xl transition-transform border-4 text-center rounded-[24px] p-5 md:p-6 ${cardFeedback === 'wrong' ? 'shake-error' : ''}`}
+                    style={{
+                      transform: isDragging 
+                        ? `translate(${dragPos.x}px, ${dragPos.y}px) rotate(${dragPos.x / 14}deg) scale(1.04)` 
+                        : cardFeedback === 'correct'
+                        ? 'translateY(-60px) scale(0.95)'
+                        : 'translate(0, 0)',
+                      opacity: cardFeedback === 'correct' ? 0 : 1,
+                      borderColor: activeCategory.accentColor,
+                      boxShadow: `0 10px 30px -5px ${activeCategory.accentColor}30`,
+                      background: `linear-gradient(135deg, #090f1e 0%, ${activeCategory.accentColor}12 100%)`
+                    }}
+                  >
+                    <div className="absolute top-2 inset-x-0 text-center pointer-events-none opacity-40 text-[9px] font-mono tracking-widest text-slate-500 uppercase">
+                      ✦ 카드를 직접 던지거나 우측 분류 보관함을 탭하세요 ✦
+                    </div>
+
+                    <div className="flex-grow flex flex-col items-center justify-center min-h-0 my-auto">
+                      <div 
+                        className="p-3.5 rounded-2xl bg-slate-950 border-2 shadow-lg mb-3 flex items-center justify-center"
+                        style={{ color: activeCategory.accentColor, borderColor: `${activeCategory.accentColor}40` }}
+                      >
+                        <Icon name={activeCategory.icon} className="w-10 h-10" />
+                      </div>
+
+                      <h2 className="text-base md:text-lg font-black text-slate-100 tracking-tight leading-snug">
+                        "{activeBook.title}"
+                      </h2>
+                      <p className="text-[10px] text-slate-400 mt-0.5">지은이: {activeBook.author || '지은이 미상'}</p>
+
+                      {/* Integrated Clue Box */}
+                      <div className="mt-4 w-full bg-slate-950/90 p-4 rounded-xl border border-slate-800/80 shadow-inner text-center">
+                        <span className="text-[9px] uppercase font-mono tracking-widest text-cyan-400 block mb-1 font-extrabold">
+                          🔍 핵심 수사 단서
+                        </span>
+                        <h3 className="text-xs md:text-sm font-black text-slate-100 leading-relaxed font-sans mt-1">
+                          이 책은 <span className="font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-yellow-400 to-orange-400 px-1 text-sm md:text-base">
+                            [{getCategoryFriendlyKeywords(activeCategory.code)}]
+                          </span>의 이야기야! {getCategoryEmoji(activeCategory.code)}
+                        </h3>
+                        <p className="text-[11px] text-slate-400 leading-relaxed mt-2 italic border-t border-slate-900/60 pt-2.5">
+                          "{activeBook.description}"
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 flex items-center justify-between border-t border-slate-800/40 pt-2 text-[10px]">
+                      <span className="text-slate-500 font-mono">BOOK ID: {activeBook.id}</span>
+                      <button
+                        onClick={onOpenCheatSheet}
+                        className="text-slate-400 hover:text-slate-200 underline underline-offset-2 font-bold flex items-center gap-1 cursor-pointer"
+                      >
+                        KDC 가이드 비밀 수첩 📖
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-slate-900/40 rounded-[24px] border border-slate-800 text-slate-500 text-xs">
+                    도서 데이터를 불러오는 중...
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Right Column (60% Width - Symmetrical 2x5 Grid with 5-Second Delay Color Mechanic) */}
+            <div className="w-full md:w-[60%] h-full flex flex-col justify-stretch min-h-0">
+              
+              {/* Anti-Spoiler Status Banner */}
+              <div className="w-full shrink-0 mb-3 bg-slate-950/40 px-4 py-2.5 rounded-2xl border border-slate-800/60 flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                  <Icon name="Eye" className="w-4 h-4 text-cyan-400 animate-pulse" />
+                  <span>KDC 분류 보관함 (000-900)</span>
+                </span>
+                
+                <div className="flex items-center gap-2">
+                  {isLocked ? (
+                    <div className="flex items-center gap-1.5 bg-slate-900/95 border border-slate-700 px-3 py-1 rounded-xl text-[10px] text-slate-400 font-bold animate-pulse">
+                      <span className="w-2 h-2 rounded-full bg-slate-500 inline-block mr-0.5" />
+                      스포일러 방지 암막 상태 ({Math.max(0, 5 - secondsStuck)}초 후 잠금해제)
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/35 px-3 py-1 rounded-xl text-[10px] text-emerald-400 font-extrabold animate-bounce">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block mr-0.5 animate-pulse" />
+                      분류가이드 테마색 동기화 완료! 🎨
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* 10 Category Buttons Grid */}
+              <div 
+                className="grid grid-cols-2 gap-3 h-full flex-grow"
+                style={{ gridTemplateRows: 'repeat(5, minmax(0, 1fr))' }}
+                id="categories-grid"
+              >
+                {KDC_CATEGORIES.map(cat => {
+                  const isMatched = activeCategory?.code === cat.code;
+                  const buttonBorderColor = isLocked ? '#1e293b' : `${cat.accentColor}50`;
+                  const buttonBackground = isLocked
+                    ? 'linear-gradient(135deg, #090f1e 0%, #151f32 100%)'
+                    : `linear-gradient(135deg, #090e1a 0%, ${cat.accentColor}1c 100%)`;
+                  const badgeBgColor = isLocked ? '#475569' : cat.accentColor;
+                  const textHighlightClass = isLocked ? 'group-hover:text-slate-200' : 'group-hover:text-white';
+                  const keywordHighlightClass = isLocked ? 'text-slate-400 group-hover:text-slate-200' : 'text-slate-400 group-hover:text-cyan-300';
+
+                  return (
+                    <button
+                      key={cat.code}
+                      id={`kdc-btn-${cat.code}`}
+                      onClick={() => gradeAnswer(cat.code)}
+                      className="rounded-2xl border flex flex-col items-center justify-center p-2 md:p-3 shadow-md hover:shadow-2xl transition-all transform hover:-translate-y-0.5 active:translate-y-0 text-center cursor-pointer group select-none relative overflow-hidden"
+                      style={{
+                        borderColor: buttonBorderColor,
+                        background: buttonBackground,
+                        transitionProperty: 'background, border-color, box-shadow, transform',
+                        transitionDuration: '1000ms',
+                        transitionTimingFunction: 'ease-in-out'
+                      }}
+                    >
+                      {!isLocked && isMatched && (
+                        <div 
+                          className="absolute inset-0 opacity-[0.03] animate-pulse pointer-events-none"
+                          style={{ backgroundColor: cat.accentColor }}
+                        />
+                      )}
+
+                      <div className="flex items-center gap-3.5 w-full h-full px-2 md:px-4">
+                        <div 
+                          className="w-11 h-11 shrink-0 rounded-[14px] text-white flex flex-col items-center justify-center font-black shadow-md transition-all duration-1000 ease-in-out"
+                          style={{ backgroundColor: badgeBgColor }}
+                        >
+                          <span className="text-[11px] font-mono leading-none">{cat.code}</span>
+                          <div className="mt-0.5"><Icon name={cat.icon} className="w-4 h-4 text-white" /></div>
+                        </div>
+
+                        <div className="flex-1 text-left min-w-0 flex flex-col justify-center">
+                          <h4 className={`text-[13px] md:text-sm font-extrabold text-slate-100 ${textHighlightClass} transition-colors duration-1000 block leading-tight`}>
+                            {cat.code} {cat.name} {getCategoryEmoji(cat.code)}
+                          </h4>
+                          <p className={`text-[10px] md:text-[11px] font-semibold mt-1 truncate ${keywordHighlightClass} transition-colors duration-1000 leading-tight`}>
+                            {getCategoryFriendlyKeywords(cat.code).split(' / ').slice(0, 3).join(' / ')}
+                          </p>
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+          </div>
+
+          {/* Pause Modal */}
+          {isPaused && (
+            <div className="absolute inset-0 bg-slate-950/92 backdrop-blur-md flex flex-col items-center justify-center z-40 p-8 text-center animate-pop-up">
+              <div className="w-16 h-16 rounded-2xl bg-cyan-500/20 flex items-center justify-center border-2 border-cyan-400 shadow-xl mb-4 text-3xl">
+                🕵️‍♂️
+              </div>
+              <h3 className="text-2xl font-black tracking-tight text-white">수사 일시 중지</h3>
+              <p className="text-xs text-slate-400 mt-2 text-center max-w-sm leading-relaxed">
+                도서 분류 체계를 차분히 복기해 보고 이어가세요. KDC 비밀 수첩 가이드를 열어 자세한 하위 분류 체계를 습득할 수 있습니다.
+              </p>
+              <div className="flex flex-col gap-3 w-full max-w-xs mt-6">
+                <button 
+                  onClick={() => { sfx.playTap(); setIsPaused(false); }}
+                  className="w-full p-3.5 bg-gradient-to-r from-cyan-500 to-indigo-500 hover:from-cyan-400 text-white font-extrabold text-sm rounded-xl tracking-wider flex items-center justify-center gap-2 cursor-pointer shadow-lg"
+                >
+                  <Icon name="Play" className="w-4 h-4 fill-white" /> 수사 다시 시작하기
+                </button>
+                <button 
+                  onClick={() => { sfx.playTap(); onOpenCheatSheet(); }}
+                  className="w-full p-3 bg-slate-800 hover:bg-slate-700 text-slate-100 border border-slate-700 font-bold text-xs rounded-xl tracking-wider cursor-pointer"
+                >
+                  KDC 분류 수첩 열기 📖
+                </button>
+                <button 
+                  onClick={() => { sfx.playTap(); onExitGame(); }}
+                  className="w-full p-2 text-xs text-slate-500 hover:text-rose-400 transition-colors cursor-pointer mt-2"
+                >
+                  진행 상황 취소 후 메인으로 탈출
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Pedagogical Error Feedback Modal */}
+          {explainPopup && (
+            <div className="absolute inset-0 bg-slate-950/95 backdrop-blur-md flex flex-col items-center justify-center z-40 p-6 text-center animate-pop-up">
+              <div className="w-14 h-14 rounded-2xl bg-rose-500/20 border border-rose-500/40 text-rose-500 flex items-center justify-center mb-3">
+                <Icon name="AlertCircle" className="w-7 h-7" />
+              </div>
+              <h3 className="text-xl font-black text-rose-400">오답 포착! 이 책은 그 칸에 꽂히지 않아!</h3>
+              <div className="my-4 p-5 rounded-2xl bg-slate-900 border border-slate-800/80 w-full max-w-md">
+                <p className="text-[10px] text-slate-400 uppercase tracking-widest font-mono">대상 도서명</p>
+                <h4 className="font-extrabold text-sm md:text-base text-slate-100 my-1">"{explainPopup.book.title}"</h4>
+                <div className="grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-slate-800/60">
+                  <div className="p-2.5 rounded-xl bg-slate-950/80 border border-rose-500/20 text-center">
+                    <span className="text-[9px] text-slate-500 block">선택한 분류 ❌</span>
+                    <span className="text-xs text-rose-400 font-bold block mt-1 truncate">{explainPopup.chosen}</span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/40 text-center">
+                    <span className="text-[9px] text-emerald-400 block">정답 분류 ✦</span>
+                    <span className="text-xs text-emerald-400 font-black block mt-1 truncate">{explainPopup.actual} {explainPopup.actualName}</span>
+                  </div>
+                </div>
+                <p className="text-xs text-slate-300 mt-4 text-left bg-slate-950/60 p-3 rounded-xl leading-relaxed">
+                  💡 <strong className="text-cyan-400">{explainPopup.actual} {explainPopup.actualName}:</strong> {explainPopup.book.description}이므로 이 분류에 들어간단다!
+                </p>
+              </div>
+              <button 
+                onClick={loadNextCard}
+                className="px-8 py-3.5 bg-slate-800 hover:bg-slate-700 text-white font-black text-xs rounded-xl tracking-widest uppercase cursor-pointer hover:scale-105 active:scale-95 shadow-md"
+              >
+                알겠어요, 다음 책 해결하기! ➔
+              </button>
+            </div>
+          )}
+
+        </div>
+      );
+    }
+
+    // --- Component: Result Page (Defensive & Robust) ---
+    function ResultPage({ stats, onRetry, onExit }) {
+      const safeStats = stats || {
+        score: 0,
+        correctCount: 0,
+        wrongCount: 0,
+        maxCombo: 0,
+        currentCombo: 0,
+        history: []
+      };
+
+      const [localHighScores, setLocalHighScores] = useState([]);
+      const [shareCopied, setShareCopied] = useState(false);
+
+      const safeScore = safeStats.score ?? 0;
+      const currentRank = useMemo(() => {
+        const matched = [...DETECTIVE_RANKS].reverse().find(r => safeScore >= r.minScore);
+        return matched || DETECTIVE_RANKS[0];
+      }, [safeScore]);
+
+      const safeCorrect = safeStats.correctCount ?? 0;
+      const safeWrong = safeStats.wrongCount ?? 0;
+      const totalSolved = safeCorrect + safeWrong;
+      const accuracy = totalSolved > 0 ? Math.round((safeCorrect / totalSolved) * 100) : 0;
+
+      useEffect(() => {
+        try {
+          if (typeof window === 'undefined' || !window.localStorage) return;
+          const stored = localStorage.getItem('kdc_book_detective_highscores');
+          let list = [];
+          if (stored) {
+            try {
+              const parsed = JSON.parse(stored);
+              if (Array.isArray(parsed)) {
+                list = parsed.filter(item => item && typeof item.score === 'number');
+              }
+            } catch (e) {
+              list = [];
+            }
+          }
+          const newRecord = {
+            score: safeScore,
+            date: new Date().toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+            rankTitle: currentRank?.title || '수사관'
+          };
+          const nextScores = [...list, newRecord]
+            .sort((a, b) => (b.score || 0) - (a.score || 0))
+            .slice(0, 5);
+          localStorage.setItem('kdc_book_detective_highscores', JSON.stringify(nextScores));
+          setLocalHighScores(nextScores);
+        } catch (e) {
+          console.warn('LocalStorage error:', e);
+        }
+      }, [safeScore, currentRank?.title]);
+
+      const handleShare = () => {
+        try {
+          sfx.playTap();
+          const scoreStr = safeScore.toLocaleString();
+          const rankTitle = currentRank?.title || '수사관';
+          const maxCombo = safeStats.maxCombo ?? 0;
+          const shareText = `📚 KDC 책방수사대 사건 종결! 🕵️‍♂️\n나의 최종 점수: ${scoreStr}점\n수사 등급: ${rankTitle}\n정답률: ${accuracy}%\n최대 콤보: ${maxCombo} 연타! 🔥`;
+          if (navigator && navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(shareText).then(() => {
+              setShareCopied(true);
+              setTimeout(() => setShareCopied(false), 2500);
+            }).catch(() => {
+              alert(shareText);
+            });
+          } else {
+            alert(shareText);
+          }
+        } catch (e) {
+          console.warn('Share error:', e);
+        }
+      };
+
+      return (
+        <div className="w-full max-w-lg mx-auto py-3 px-6 text-white min-h-[85vh] flex flex-col justify-between">
+          <div className="text-center mt-3">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-xs text-rose-400 font-mono mb-2">
+              <Icon name="Trophy" className="w-3.5 h-3.5" />
+              <span>수사 미션 완료 종결서</span>
+            </div>
+            <h1 className="text-3xl font-black text-slate-100 tracking-tight">수사 결과 보고</h1>
+          </div>
+
+          <div className="flex flex-col items-center mt-4">
+            <div className="relative text-center">
+              <div className="w-32 h-32 rounded-full border-4 border-amber-400/80 bg-slate-900 shadow-2xl flex items-center justify-center text-5xl mx-auto">
+                {currentRank?.level === 4 ? '👑' : currentRank?.level === 3 ? '🔍' : currentRank?.level === 2 ? '🧐' : '🧹'}
+              </div>
+              <div className="mt-4">
+                <span className={`px-4 py-1.5 rounded-full border-2 border-slate-900 font-black text-sm shadow-xl inline-block ${currentRank?.colorClass || 'text-slate-400 bg-slate-800'}`}>
+                  {currentRank?.title || '꼬마 도서관 견습생 🧹'}
+                </span>
+              </div>
+            </div>
+            <p className="text-xs text-slate-300 mt-5 text-center italic bg-slate-900/60 p-3.5 rounded-xl border border-slate-800 max-w-md leading-relaxed">
+              " {currentRank?.quote || '사건 수사를 완료했습니다!'} "
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 mt-5">
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-3.5 text-center shadow-lg">
+              <span className="text-[10px] text-slate-500 font-mono uppercase tracking-widest block">최종 사건 점수</span>
+              <span className="text-2xl font-black text-amber-300 tracking-tight mt-1 block">
+                {safeScore.toLocaleString()}
+              </span>
+              <span className="text-[9px] text-slate-400 mt-1 block">정답 + 콤보 보너스 누적</span>
+            </div>
+
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-3.5 text-center shadow-lg">
+              <span className="text-[10px] text-slate-500 font-mono uppercase tracking-widest block">분류 수사 정답률</span>
+              <span className="text-2xl font-black text-cyan-400 tracking-tight mt-1 block">
+                {accuracy}%
+              </span>
+              <span className="text-[9px] text-slate-400 mt-1 block">
+                {safeCorrect} 성공 / {totalSolved} 총 시도
+              </span>
+            </div>
+
+            <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-3 flex items-center justify-between col-span-2">
+              <div className="flex items-center gap-2">
+                <Icon name="CheckCircle2" className="w-4 h-4 text-emerald-400" />
+                <span className="text-xs text-slate-300">정답:</span>
+                <strong className="text-xs text-emerald-400">{safeCorrect}권</strong>
+              </div>
+              <div className="h-4 w-[1px] bg-slate-800" />
+              <div className="flex items-center gap-2">
+                <Icon name="Flame" className="w-4 h-4 text-amber-500 fill-amber-500" />
+                <span className="text-xs text-slate-300">최대 콤보:</span>
+                <strong className="text-xs text-amber-400">{safeStats.maxCombo ?? 0} 연타</strong>
+              </div>
+              <div className="h-4 w-[1px] bg-slate-800" />
+              <div className="flex items-center gap-2">
+                <Icon name="XCircle" className="w-4 h-4 text-rose-500" />
+                <span className="text-xs text-slate-300">오답:</span>
+                <strong className="text-xs text-rose-400">{safeWrong}권</strong>
+              </div>
+            </div>
+          </div>
+
+          <div className="w-full mt-5 bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 shadow-xl">
+            <h3 className="text-xs font-mono uppercase tracking-widest text-slate-400 text-center pb-2 border-b border-slate-800 flex items-center justify-center gap-1.5">
+              🏆 우리 교실 명사수 명예의 전당 (HIGH RECORDS)
+            </h3>
+            <div className="space-y-2 mt-3 max-h-32 overflow-y-auto pr-1">
+              {localHighScores.length > 0 ? (
+                localHighScores.map((rec, i) => (
+                  <div key={i} className="flex justify-between items-center text-xs p-1.5 px-3 rounded-lg bg-slate-950/40">
+                    <div className="flex items-center gap-2">
+                      <span className={`w-4 h-4 rounded text-[10px] font-bold text-center flex items-center justify-center ${i === 0 ? 'bg-amber-400 text-slate-950' : i === 1 ? 'bg-slate-300 text-slate-950' : 'bg-slate-800 text-slate-400'}`}>
+                        {i + 1}
+                      </span>
+                      <span className="text-slate-400 font-mono text-[10px]">{rec?.date || '오늘'}</span>
+                      <span className="text-[11px] font-bold text-slate-200">{rec?.rankTitle || '수사관'}</span>
+                    </div>
+                    <span className="font-mono font-bold text-amber-400">{(rec?.score ?? 0).toLocaleString()}점</span>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-2 text-xs text-slate-500">
+                  첫 수사 기록이 등록되었습니다!
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="flex gap-3.5 mt-6 pb-2">
+            <button
+              onClick={handleShare}
+              className={`flex-1 p-3.5 text-xs font-extrabold uppercase rounded-xl border tracking-widest cursor-pointer flex items-center justify-center gap-1.5 ${shareCopied ? 'bg-emerald-950/40 border-emerald-500 text-emerald-400' : 'bg-slate-900 hover:bg-slate-800 border-slate-800 text-slate-200'}`}
+            >
+              {shareCopied ? '수사 기록 복사완료!' : <><Icon name="Share2" className="w-4 h-4" /> 친구에게 점수 자랑</>}
+            </button>
+            <button
+              onClick={() => { sfx.playTap(); onRetry(); }}
+              className="flex-1 p-3.5 bg-gradient-to-r from-pink-500 via-purple-600 to-indigo-500 hover:from-pink-400 font-black text-xs text-white uppercase tracking-widest rounded-xl shadow-lg cursor-pointer flex items-center justify-center gap-1.5"
+            >
+              <Icon name="RotateCcw" className="w-4 h-4" /> 새로운 사건 수사하기!
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    // --- Root App Container ---
+    function App() {
+      const [page, setPage] = useState('intro');
+      const [config, setConfig] = useState({ timeLimit: 60, soundEnabled: true, hintsEnabled: true });
+      const [stats, setStats] = useState(null);
+      const [isCheatSheetOpen, setIsCheatSheetOpen] = useState(false);
+
+      const handleStart = (cfg) => {
+        setConfig(cfg);
+        setPage('play');
+      };
+
+      const handleFinished = (st) => {
+        setStats(st || {
+          score: 0,
+          correctCount: 0,
+          wrongCount: 0,
+          maxCombo: 0,
+          currentCombo: 0,
+          history: [],
+          timeRemaining: 0
+        });
+        setPage('result');
+      };
+
+      return (
+        <div className={`bg-slate-950 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.18),rgba(255,255,255,0))] text-slate-100 flex flex-col font-sans relative selection:bg-pink-500/30 ${page === 'play' ? 'h-screen w-screen overflow-hidden' : 'min-h-screen overflow-x-hidden'}`}>
+          <div className="absolute top-0 inset-x-0 h-[3px] bg-gradient-to-r from-pink-500 via-purple-600 to-cyan-400 opacity-80 z-50" />
+
+          {page !== 'play' && (
+            <header className="w-full bg-slate-900/40 border-b border-slate-900/60 p-4 shrink-0">
+              <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
+                <div onClick={() => setPage('intro')} className="flex items-center gap-2 cursor-pointer">
+                  <div className="p-1.5 rounded-lg bg-pink-500/10 border border-pink-400/20 text-pink-400">
+                    <Icon name="GraduationCap" className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <span className="font-extrabold text-sm tracking-tight text-slate-100 block">KDC 책방수사대</span>
+                    <span className="text-[9px] text-slate-500 font-mono tracking-widest uppercase block">Middle School Gamified KDC quiz</span>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => { sfx.playTap(); setIsCheatSheetOpen(true); }}
+                  className="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs text-slate-200 font-bold flex items-center gap-1.5 shadow-md cursor-pointer"
+                >
+                  <Icon name="BookOpen" className="w-3.5 h-3.5 text-pink-400 animate-pulse" />
+                  <span>KDC 분류 비밀 수첩</span>
+                </button>
+              </div>
+            </header>
+          )}
+
+          <main className={`flex-grow relative z-10 ${page === 'play' ? 'w-full h-full p-0 overflow-hidden flex flex-col' : 'max-w-4xl w-full mx-auto p-2 md:p-4 flex flex-col justify-center'}`}>
+            {page === 'intro' && <IntroPage onStart={handleStart} onOpenCheatSheet={() => setIsCheatSheetOpen(true)} />}
+            {page === 'play' && <GamePlayPage config={config} onGameFinished={handleFinished} onOpenCheatSheet={() => setIsCheatSheetOpen(true)} onExitGame={() => setPage('intro')} />}
+            {page === 'result' && (
+              <ResultPage 
+                stats={stats || { score: 0, correctCount: 0, wrongCount: 0, maxCombo: 0, currentCombo: 0, history: [], timeRemaining: 0 }} 
+                onRetry={() => setPage('play')} 
+                onExit={() => setPage('intro')} 
+              />
+            )}
+          </main>
+
+          <KdcCheatSheet isOpen={isCheatSheetOpen} onClose={() => { sfx.playTap(); setIsCheatSheetOpen(false); }} />
+        </div>
+      );
+    }
+
+    const rootElement = document.getElementById('root');
+    if (ReactDOM.createRoot) {
+      ReactDOM.createRoot(rootElement).render(
+        <ErrorBoundary>
+          <App />
+        </ErrorBoundary>
+      );
+    } else {
+      ReactDOM.render(
+        <ErrorBoundary>
+          <App />
+        </ErrorBoundary>,
+        rootElement
+      );
+    }
+  </script>
+</body>
+</html>

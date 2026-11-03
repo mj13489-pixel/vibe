@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>페티의 투명 페트병 구출 대작전 - 올바른 분리배출 5단계</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#ecfdf5',
+              100: '#d1fae5',
+              500: '#10b981',
+              600: '#059669',
+              700: '#047857'
+            }
+          }
+        }
+      }
+    };
+  </script>
+
+  <!-- React 18 & ReactDOM -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <!-- Babel Standalone (JSX 컴파일러) -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    @keyframes bounce-slow {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+    .animate-bounce-slow {
+      animation: bounce-slow 2.5s infinite ease-in-out;
+    }
+    body {
+      background: radial-gradient(circle at top right, #f0fdf4 0%, #f8fafc 100%);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans KR", sans-serif;
+    }
+  </style>
+</head>
+<body class="min-h-screen text-slate-800 antialiased selection:bg-emerald-200">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    // Web Audio API 사운드 효과
+    const playSoundEffect = (type) => {
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        const now = ctx.currentTime;
+        if (type === "water") {
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(400, now);
+          osc.frequency.exponentialRampToValueAtTime(150, now + 0.3);
+          gain.gain.setValueAtTime(0.3, now);
+          gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+          osc.start(now);
+          osc.stop(now + 0.3);
+        } else if (type === "peel") {
+          osc.type = "triangle";
+          osc.frequency.setValueAtTime(600, now);
+          osc.frequency.linearRampToValueAtTime(950, now + 0.25);
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+          osc.start(now);
+          osc.stop(now + 0.25);
+        } else if (type === "crunch") {
+          osc.type = "sawtooth";
+          osc.frequency.setValueAtTime(160, now);
+          osc.frequency.linearRampToValueAtTime(60, now + 0.25);
+          gain.gain.setValueAtTime(0.35, now);
+          gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+          osc.start(now);
+          osc.stop(now + 0.25);
+        } else if (type === "cap") {
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(520, now);
+          osc.frequency.exponentialRampToValueAtTime(780, now + 0.15);
+          gain.gain.setValueAtTime(0.25, now);
+          gain.gain.linearRampToValueAtTime(0.01, now + 0.15);
+          osc.start(now);
+          osc.stop(now + 0.15);
+        } else if (type === "success") {
+          const notes = [523.25, 659.25, 783.99, 1046.50];
+          notes.forEach((freq, idx) => {
+            const o = ctx.createOscillator();
+            const g = ctx.createGain();
+            o.connect(g);
+            g.connect(ctx.destination);
+            o.frequency.value = freq;
+            g.gain.setValueAtTime(0.15, now + idx * 0.1);
+            g.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.1 + 0.25);
+            o.start(now + idx * 0.1);
+            o.stop(now + idx * 0.1 + 0.25);
+          });
+        }
+      } catch (e) {
+        console.warn("Audio error:", e);
+      }
+    };
+
+    const STEP_DATA = {
+      1: {
+        title: "1단계: 비우기 & 헹구기",
+        subtitle: "내용물을 완전히 비우고 깨끗한 물로 헹궈주세요!",
+        tip: "남아있는 음료 잔여물은 곰팡이를 번식시키고 리사이클 플레이크 품질을 심각하게 떨어뜨립니다.",
+        fact: "내용물이 1%만 섞여도 해당 로트 전체가 저급 재생원료로 강등되거나 소각 처리됩니다."
+      },
+      2: {
+        title: "2단계: 라벨 뜯기",
+        subtitle: "몸통에 붙은 비닐 라벨을 말끔하게 뜯어주세요!",
+        tip: "비닐 라벨(PP/PE)은 페트(PET) 몸체와 재질이 달라 섞이면 재생설비 고장과 결함을 유발합니다.",
+        fact: "전체 배출 페트병의 약 40%가 라벨 미제거로 인해 고품질 원사로 재탄생하지 못하고 있습니다."
+      },
+      3: {
+        title: "3단계: 찌그러트리기",
+        subtitle: "손이나 발로 꾹 밟아 부피를 최소한으로 압축하세요!",
+        tip: "공기를 최대한 빼고 납작하게 만들어 수거 운반 효율을 극대화합니다.",
+        fact: "압축하여 배출하면 수거 트럭의 적재 용량이 3배 이상 증가하여 물류 탄소 배출량이 60% 절감됩니다."
+      },
+      4: {
+        title: "4단계: 뚜껑 꼭 닫기",
+        subtitle: "납작해진 상태에서 뚜껑을 꼭 닫아 고정해주세요!",
+        tip: "뚜껑을 닫아두면 이물질이 들어가지 않고 압축 상태가 유지됩니다.",
+        fact: "뚜껑(PP/PE)은 물에 뜨고 몸체(PET)는 가라앉으므로 파쇄 후 비중 분리 세척 공정에서 100% 자동 분리됩니다!"
+      },
+      5: {
+        title: "5단계: 전용 수거함 투하",
+        subtitle: "투명 페트병 전용 수거함에 쏙 넣어주세요!",
+        tip: "유색 플라스틱이나 일반 플라스틱과 섞지 말고 오직 '투명 페트병' 전용함에 넣어야 합니다.",
+        fact: "투명 페트병 15개로 기능성 티셔츠 1벌, 30개로 튼튼한 패딩 점퍼 충전재가 탄생합니다."
+      }
+    };
+
+    function App() {
+      const [currentStep, setCurrentStep] = useState(1);
+      const [rinseLevel, setRinseLevel] = useState(100);
+      const [isLabelPeeled, setIsLabelPeeled] = useState(false);
+      const [isFlattened, setIsFlattened] = useState(false);
+      const [isCapClosed, setIsCapClosed] = useState(false);
+      const [isDropped, setIsDropped] = useState(false);
+      const [rescuedTotal, setRescuedTotal] = useState(12);
+      const [co2Saved, setCo2Saved] = useState(744);
+      const [resetKey, setResetKey] = useState(0);
+
+      const [petyMessage, setPetyMessage] = useState(
+        "안녕 친구! 나는 페트병 단장 '페티'야! 날 깨끗하게 비워서 새로운 옷으로 다시 태어나게 도와줄래?"
+      );
+
+      useEffect(() => {
+        if (currentStep === 1) {
+          setPetyMessage("첫 번째! 페트병 속 남은 음료를 버리고 물로 헹궈줘! 아래 비우기 버튼을 눌러볼래?");
+        } else if (currentStep === 2) {
+          setPetyMessage("좋았어! 깨끗해졌네! 이제 몸통 아래 비닐 라벨을 뜯어야 해. 라벨을 클릭해서 떼어내 줘!");
+        } else if (currentStep === 3) {
+          setPetyMessage("이제 내 몸을 꾹 밟아서 납작하게 압축해줘! 그래야 수거 트럭이 한 번에 많이 실어 나를 수 있거든!");
+        } else if (currentStep === 4) {
+          setPetyMessage("완벽한 납작 형태야! 공기가 다시 차오르지 않게 뚜껑을 꼭 닫아줘. 뚜껑은 비중 차이로 공장에서 자동 분리된단다!");
+        } else if (currentStep === 5) {
+          setPetyMessage("드디어 마지막 단계! 나를 투명 페트병 전용 수거함에 쏙 골인시켜 줘!");
+        }
+      }, [currentStep]);
+
+      const handleReset = () => {
+        playSoundEffect("water");
+        setResetKey(prev => prev + 1);
+        setCurrentStep(1);
+        setRinseLevel(100);
+        setIsLabelPeeled(false);
+        setIsFlattened(false);
+        setIsCapClosed(false);
+        setIsDropped(false);
+      };
+
+      const handleRinse = () => {
+        playSoundEffect("water");
+        if (rinseLevel > 0) {
+          setRinseLevel(0);
+          setTimeout(() => setCurrentStep(2), 600);
+        }
+      };
+
+      const handlePeelLabel = () => {
+        playSoundEffect("peel");
+        setIsLabelPeeled(true);
+        setTimeout(() => setCurrentStep(3), 600);
+      };
+
+      const handleFlatten = () => {
+        playSoundEffect("crunch");
+        setIsFlattened(true);
+        setTimeout(() => setCurrentStep(4), 600);
+      };
+
+      const handleCloseCap = () => {
+        playSoundEffect("cap");
+        setIsCapClosed(true);
+        setTimeout(() => setCurrentStep(5), 600);
+      };
+
+      const handleDrop = () => {
+        playSoundEffect("success");
+        setIsDropped(true);
+        setRescuedTotal(prev => prev + 1);
+        setCo2Saved(prev => prev + 62);
+      };
+
+      return (
+        <div className="max-w-6xl mx-auto px-4 py-8">
+          {/* Header */}
+          <header className="flex flex-col sm:flex-row items-center justify-between gap-4 pb-6 border-b border-emerald-100">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-white shadow-lg shadow-emerald-200">
+                <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              </div>
+              <div>
+                <h1 className="text-xl sm:text-2xl font-black text-slate-800 tracking-tight flex items-center gap-2">
+                  페티(Pety)의 투명 페트병 구출 대작전
+                  <span className="text-xs bg-emerald-100 text-emerald-700 font-bold px-2 py-0.5 rounded-full">
+                    올바른 분리배출 5스텝
+                  </span>
+                </h1>
+                <p className="text-xs sm:text-sm text-slate-500 mt-0.5 font-medium">
+                  비우고, 떼고, 찌그러트리고, 닫아서 투명 전용함에 쏙!
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <div className="bg-white border border-emerald-200 rounded-xl px-4 py-2 shadow-sm text-right">
+                <div className="text-[11px] text-slate-400 font-bold uppercase">구출된 페트병</div>
+                <div className="text-lg font-black text-emerald-600">{rescuedTotal} <span className="text-xs text-slate-500 font-normal">개</span></div>
+              </div>
+              <div className="bg-white border border-teal-200 rounded-xl px-4 py-2 shadow-sm text-right">
+                <div className="text-[11px] text-slate-400 font-bold uppercase">절감된 탄소량</div>
+                <div className="text-lg font-black text-teal-600">{(co2Saved / 1000).toFixed(2)} <span className="text-xs text-slate-500 font-normal">kg CO₂</span></div>
+              </div>
+              <button 
+                onClick={handleReset}
+                className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition flex items-center gap-1.5"
+                title="처음부터 다시 시뮬레이션하기"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                다시하기
+              </button>
+            </div>
+          </header>
+
+          {/* Stepper Progress */}
+          <nav className="mt-8 mb-6">
+            <div className="grid grid-cols-5 gap-2 sm:gap-4">
+              {[1, 2, 3, 4, 5].map((step) => {
+                const isPassed = currentStep > step;
+                const isCurrent = currentStep === step;
+                return (
+                  <div
+                    key={step}
+                    onClick={() => {
+                      if (step <= currentStep) setCurrentStep(step);
+                    }}
+                    className={`p-3 rounded-2xl border text-center transition cursor-pointer ${
+                      isCurrent
+                        ? "bg-emerald-600 text-white border-emerald-600 shadow-lg shadow-emerald-200 scale-105"
+                        : isPassed
+                        ? "bg-emerald-50 text-emerald-800 border-emerald-200 font-semibold"
+                        : "bg-white text-slate-400 border-slate-200"
+                    }`}
+                  >
+                    <div className="text-[10px] font-black uppercase tracking-wider mb-1">
+                      STEP 0{step}
+                    </div>
+                    <div className="text-xs sm:text-sm font-bold truncate">
+                      {["비우기", "라벨 떼기", "찌그러트리기", "뚜껑 닫기", "전용함 배출"][step - 1]}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </nav>
+
+          {/* Main Interactive Stage */}
+          <main className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            {/* Left Stage: 3D-Like Bottle Viewport */}
+            <section className="lg:col-span-7 bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-8 shadow-sm flex flex-col justify-between min-h-[580px]">
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-xs font-black uppercase text-emerald-600 tracking-wider bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-100">
+                    인터랙티브 3D 뷰포트
+                  </span>
+                  <span className="text-xs text-slate-400 font-semibold">
+                    {STEP_DATA[currentStep].title}
+                  </span>
+                </div>
+                <h2 className="text-lg sm:text-xl font-bold text-slate-800">
+                  {STEP_DATA[currentStep].subtitle}
+                </h2>
+              </div>
+
+              {/* BOTTLE VIEWPORT CONTAINER (Always Perfectly Centered) */}
+              <div 
+                key={`bottle-center-container-${resetKey}`} 
+                className="relative my-8 flex flex-col items-center justify-center min-h-[380px] w-full"
+              >
+                {/* 5단계 완료 시 축하 폭죽 연출 */}
+                {isDropped ? (
+                  <div className="text-center p-8 bg-emerald-50 border border-emerald-200 rounded-3xl animate-bounce-slow max-w-sm">
+                    <div className="w-16 h-16 mx-auto mb-4 bg-emerald-500 text-white rounded-full flex items-center justify-center shadow-lg">
+                      <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                    <h3 className="text-xl font-black text-emerald-800">구출 대성공! 🎉</h3>
+                    <p className="text-xs text-emerald-600 font-semibold mt-2 leading-relaxed">
+                      페티가 완벽하게 분리배출되어 최고급 리사이클 원사로 재탄생할 수 있게 되었습니다!
+                    </p>
+                    <button
+                      onClick={handleReset}
+                      className="mt-6 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-md transition"
+                    >
+                      새로운 페트병 또 구출하기 ↺
+                    </button>
+                  </div>
+                ) : (
+                  /* THE PHYSICAL BOTTLE (Always exactly Centered) */
+                  <div
+                    className={`relative transition-all duration-500 ease-out flex flex-col items-center ${
+                      isFlattened ? "scale-y-[0.45] scale-x-[1.25]" : "scale-100"
+                    }`}
+                  >
+                    {/* 뚜껑 (Cap) */}
+                    <div
+                      onClick={currentStep === 4 ? handleCloseCap : undefined}
+                      className={`w-14 h-8 rounded-t-lg border-2 border-slate-700 relative z-30 transition-all cursor-pointer ${
+                        isCapClosed
+                          ? "bg-blue-600 shadow-md ring-2 ring-emerald-400"
+                          : currentStep >= 4
+                          ? "bg-blue-300 hover:bg-blue-500 animate-pulse"
+                          : "bg-blue-400"
+                      }`}
+                      title={currentStep === 4 ? "클릭해서 뚜껑 닫기" : "페트병 뚜껑"}
+                    >
+                      <div className="absolute inset-0 flex items-center justify-center text-[10px] font-black text-white">
+                        {isCapClosed ? "CLOSED" : "CAP"}
+                      </div>
+                    </div>
+
+                    {/* 병목 (Bottle Neck) */}
+                    <div className="w-10 h-6 bg-cyan-100/60 border-x-2 border-slate-400 z-20 backdrop-blur-sm"></div>
+
+                    {/* 병 몸통 (Bottle Body) */}
+                    <div className="relative w-44 h-72 rounded-3xl border-2 border-slate-400/80 bg-gradient-to-b from-cyan-50/40 via-white/50 to-blue-50/30 overflow-hidden shadow-2xl backdrop-blur-md flex flex-col items-center">
+                      
+                      {/* [수정 반영] 캐릭터 눈동자 & 상태 메시지를 몸통 '최상단'으로 올려 라벨과 겹치지 않게 분리 */}
+                      <div className="absolute top-3 z-20 flex flex-col items-center select-none pointer-events-none">
+                        <div className="flex gap-4 mb-1.5">
+                          <div className="w-5 h-6 bg-slate-800 rounded-full flex items-center justify-center shadow-sm">
+                            <div className="w-1.5 h-1.5 bg-white rounded-full -translate-y-1"></div>
+                          </div>
+                          <div className="w-5 h-6 bg-slate-800 rounded-full flex items-center justify-center shadow-sm">
+                            <div className="w-1.5 h-1.5 bg-white rounded-full -translate-y-1"></div>
+                          </div>
+                        </div>
+                        <div className="text-[11px] font-black text-slate-700 bg-white/90 px-2.5 py-0.5 rounded-full border border-slate-200 shadow-sm">
+                          {isFlattened ? ">_< (납작!)" : isLabelPeeled ? "^▽^ (라벨분리!)" : rinseLevel > 0 ? "ㅠ_ㅠ (세척필요)" : "^‿^ (상쾌해!)"}
+                        </div>
+                      </div>
+
+                      {/* 내부 잔여 액체 (1단계) */}
+                      <div
+                        className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-amber-500/80 to-amber-300/60 transition-all duration-700 pointer-events-none"
+                        style={{ height: `${rinseLevel}%` }}
+                      >
+                        {rinseLevel > 0 && (
+                          <div className="absolute bottom-2 left-2 text-[10px] font-black text-amber-900 bg-white/80 px-2 py-0.5 rounded shadow-sm">
+                            잔여 음료 ({rinseLevel}%)
+                          </div>
+                        )}
+                      </div>
+
+                      {/* [수정 반영] 비닐 라벨 (몸통 중하단 top-[52%]에 배치하여 상단 눈과 완전히 분리) */}
+                      {!isLabelPeeled ? (
+                        <div
+                          onClick={currentStep === 2 ? handlePeelLabel : undefined}
+                          className={`absolute top-[52%] w-full h-20 bg-gradient-to-r from-red-500 via-rose-500 to-orange-500 text-white flex flex-col items-center justify-center shadow-lg transition transform ${
+                            currentStep === 2
+                              ? "cursor-pointer hover:scale-105 animate-pulse ring-4 ring-yellow-300 z-10"
+                              : "opacity-90 z-10"
+                          }`}
+                        >
+                          <span className="text-[11px] font-black tracking-widest uppercase">
+                            [비닐 라벨]
+                          </span>
+                          <span className="text-[10px] font-bold opacity-95">
+                            {currentStep === 2 ? "클릭해서 뜯어내기 ✂" : "미제거 상태"}
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="absolute bottom-4 text-[10px] text-emerald-700 font-black bg-emerald-100/90 px-2.5 py-1 rounded-full border border-emerald-300 shadow-sm">
+                          ✓ 비닐 라벨 분리 완료!
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Action Controls for Current Step */}
+              <div className="border-t border-slate-100 pt-5">
+                {currentStep === 1 && (
+                  <button
+                    onClick={handleRinse}
+                    className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-2xl shadow-lg shadow-emerald-200 transition text-sm flex items-center justify-center gap-2"
+                  >
+                    <span>🚰</span> 남은 음료 비우고 깨끗이 헹구기 클릭!
+                  </button>
+                )}
+                {currentStep === 2 && (
+                  <button
+                    onClick={handlePeelLabel}
+                    className="w-full py-4 bg-rose-600 hover:bg-rose-700 text-white font-black rounded-2xl shadow-lg shadow-rose-200 transition text-sm flex items-center justify-center gap-2"
+                  >
+                    <span>✂</span> 비닐 라벨 말끔히 뜯어내기 클릭!
+                  </button>
+                )}
+                {currentStep === 3 && (
+                  <button
+                    onClick={handleFlatten}
+                    className="w-full py-4 bg-amber-600 hover:bg-amber-700 text-white font-black rounded-2xl shadow-lg shadow-amber-200 transition text-sm flex items-center justify-center gap-2"
+                  >
+                    <span>🦶</span> 발로 꾹 밟아 납작하게 찌그러트리기!
+                  </button>
+                )}
+                {currentStep === 4 && (
+                  <button
+                    onClick={handleCloseCap}
+                    className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-2xl shadow-lg shadow-blue-200 transition text-sm flex items-center justify-center gap-2"
+                  >
+                    <span>🔒</span> 뚜껑 꼭 닫아 압축 고정하기!
+                  </button>
+                )}
+                {currentStep === 5 && !isDropped && (
+                  <button
+                    onClick={handleDrop}
+                    className="w-full py-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black rounded-2xl shadow-lg shadow-emerald-200 transition text-sm flex items-center justify-center gap-2"
+                  >
+                    <span>🗑</span> 투명 페트병 전용 수거함에 쏙 넣기!
+                  </button>
+                )}
+                {isDropped && (
+                  <div className="text-center text-xs font-bold text-emerald-700 py-3 bg-emerald-50 rounded-xl border border-emerald-200">
+                    5단계 구출 미션이 완료되었습니다! 상단의 '다시하기'로 계속 연습할 수 있습니다.
+                  </div>
+                )}
+              </div>
+            </section>
+
+            {/* Right Panel: Pety Talk & Knowledge Cards */}
+            <aside className="lg:col-span-5 space-y-6">
+              {/* Pety's Live Speech Bubble */}
+              <div className="bg-white rounded-3xl border border-emerald-100 p-6 shadow-sm relative overflow-hidden">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-black text-sm">
+                    PETY
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-black text-emerald-700 uppercase tracking-wider">
+                      페티 단장의 실시간 분리배출 코칭
+                    </h3>
+                    <p className="text-[11px] text-slate-400">환경부 공인 투명 페트병 가이드라인</p>
+                  </div>
+                </div>
+
+                <div className="bg-emerald-50/70 border border-emerald-200/60 p-4 rounded-2xl text-xs sm:text-sm text-slate-700 font-bold leading-relaxed">
+                  "{petyMessage}"
+                </div>
+              </div>
+
+              {/* Environmental Knowledge & Facts */}
+              <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-sm space-y-4">
+                <h3 className="text-sm font-black text-slate-800 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                  왜 이렇게 버려야 할까요? (환경 상식)
+                </h3>
+
+                <div className="space-y-3">
+                  <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-100">
+                    <div className="text-xs font-bold text-slate-800 mb-1 flex items-center gap-1.5">
+                      <span className="text-emerald-600">💡</span> 실전 행동 팁
+                    </div>
+                    <div className="text-xs text-slate-600 leading-relaxed font-medium">
+                      {STEP_DATA[currentStep].tip}
+                    </div>
+                  </div>
+
+                  <div className="p-3.5 bg-amber-50/60 rounded-2xl border border-amber-100">
+                    <div className="text-xs font-bold text-amber-900 mb-1 flex items-center gap-1.5">
+                      <span>📊</span> 자원 순환 팩트 체크
+                    </div>
+                    <div className="text-xs text-amber-800 leading-relaxed font-medium">
+                      {STEP_DATA[currentStep].fact}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Resource Transformation Infographic */}
+              <div className="bg-gradient-to-br from-teal-900 to-slate-900 text-white rounded-3xl p-6 shadow-lg space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-black text-teal-300 uppercase tracking-wider">
+                    RECYCLING VALUE
+                  </h4>
+                  <span className="text-[11px] bg-teal-800 text-teal-200 font-bold px-2 py-0.5 rounded-full">
+                    고품질 자원
+                  </span>
+                </div>
+                <div className="text-sm font-bold leading-relaxed">
+                  투명 페트병은 쓰레기가 아니라 <br />
+                  <span className="text-emerald-400 font-extrabold text-base">"석유를 대신하는 고순도 원자재"</span>입니다.
+                </div>
+                <div className="grid grid-cols-2 gap-3 pt-2 text-center text-xs">
+                  <div className="bg-white/10 rounded-2xl p-3 border border-white/10">
+                    <div className="text-xl mb-1">👕</div>
+                    <div className="font-extrabold text-emerald-300">15병</div>
+                    <div className="text-[11px] text-slate-300 mt-0.5">기능성 반팔 티셔츠</div>
+                  </div>
+                  <div className="bg-white/10 rounded-2xl p-3 border border-white/10">
+                    <div className="text-xl mb-1">🧥</div>
+                    <div className="font-extrabold text-teal-300">30병</div>
+                    <div className="text-[11px] text-slate-300 mt-0.5">고보온 패딩 점퍼</div>
+                  </div>
+                </div>
+              </div>
+            </aside>
+          </main>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById("root"));
+    root.render(<App />);
+  </script>
+</body>
+</html>
