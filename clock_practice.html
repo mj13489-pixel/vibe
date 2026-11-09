@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>시계 읽기 연습</title>
+<style>
+:root{
+  --bg:#e6f3ff;--card:#ffffff;--text:#1b2a41;--muted:#4a5b75;--line:#b9d3ee;
+  --red:#d62839;--blue:#1565c0;--sun:#ffc533;--suntext:#1b2a41;
+  --good:#12805c;--goodbg:#dff6ec;--bad:#b3261e;--badbg:#fde7e4;--warn:#8a5a00;--warnbg:#fff1cc;
+  --face:#ffffff;--rim:#1b2a41;--tick:#1b2a41;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#10203a;--card:#1a2f52;--text:#f1f6ff;--muted:#b4c6e4;--line:#35507f;
+    --red:#ff6b78;--blue:#6db3ff;--sun:#ffc533;--suntext:#1b2a41;
+    --good:#7ee2b8;--goodbg:#143f33;--bad:#ff9d94;--badbg:#4a1e1e;--warn:#ffd77a;--warnbg:#4a3a10;
+    --face:#f6f9ff;--rim:#0a1426;--tick:#1b2a41;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#10203a;--card:#1a2f52;--text:#f1f6ff;--muted:#b4c6e4;--line:#35507f;
+  --red:#ff6b78;--blue:#6db3ff;--sun:#ffc533;--suntext:#1b2a41;
+  --good:#7ee2b8;--goodbg:#143f33;--bad:#ff9d94;--badbg:#4a1e1e;--warn:#ffd77a;--warnbg:#4a3a10;
+  --face:#f6f9ff;--rim:#0a1426;--tick:#1b2a41;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);
+  font-family:"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",system-ui,sans-serif;
+  font-size:24px;line-height:1.45;-webkit-text-size-adjust:100%}
+.wrap{max-width:1000px;margin:0 auto;padding:16px}
+h1{font-size:clamp(28px,5vw,38px);margin:4px 0 12px;text-align:center;font-weight:800}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer;touch-action:manipulation}
+:focus-visible{outline:4px solid var(--text);outline-offset:3px}
+.levels{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.lv{min-height:68px;border:3px solid var(--line);background:var(--card);border-radius:18px;
+  font-weight:800;font-size:24px;padding:6px 4px;line-height:1.2}
+.lv small{display:block;font-size:18px;font-weight:600;color:var(--muted)}
+.lv[aria-pressed="true"]{background:var(--sun);border-color:var(--text);color:var(--suntext);
+  box-shadow:0 5px 0 var(--text);transform:translateY(-2px)}
+.lv[aria-pressed="true"] small{color:var(--suntext)}
+.main{display:grid;gap:16px}
+@media (min-width:820px){.main{grid-template-columns:1.1fr 1fr;align-items:start}}
+.card{background:var(--card);border:3px solid var(--line);border-radius:24px;padding:16px}
+#clock{display:block;width:100%;max-width:480px;margin:0 auto;aspect-ratio:1;touch-action:auto;user-select:none;-webkit-user-select:none}
+#clock.drag{touch-action:none;cursor:grab}
+.face{fill:var(--face);stroke:var(--rim);stroke-width:5}
+.tk{stroke:var(--tick);stroke-linecap:round}
+.num{fill:#1b2a41;font-size:17px;font-weight:800;text-anchor:middle;dominant-baseline:central}
+#hh{stroke:var(--red);stroke-width:9;stroke-linecap:round}
+#mm{stroke:var(--blue);stroke-width:4.5;stroke-linecap:round}
+#cap{fill:#1b2a41}
+.tools{display:flex;justify-content:center;margin-top:12px}
+.btn{min-height:64px;padding:10px 24px;border-radius:18px;border:3px solid var(--text);background:var(--card);font-weight:800;font-size:24px}
+.btn.main-btn{background:var(--sun);color:var(--suntext);box-shadow:0 5px 0 var(--text)}
+.btn:active{transform:translateY(2px)}
+.btn[aria-pressed="true"]{background:var(--blue);color:#fff;border-color:var(--text)}
+:root[data-theme="dark"] .btn[aria-pressed="true"]{color:#10203a}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .btn[aria-pressed="true"]{color:#10203a}}
+.q{font-weight:800;margin:0 0 12px;text-align:center}
+.inputs{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.inputs input{width:96px;height:72px;font-size:34px;font-weight:800;text-align:center;border-radius:16px;background:var(--card);border-width:5px;border-style:solid}
+#hIn{border-color:var(--red)}#mIn{border-color:var(--blue)}
+.u{font-weight:800}
+.grp{display:flex;align-items:center;gap:8px}
+.inputs input{width:84px}
+.step{width:60px;height:72px;padding:0;border-radius:16px;border:4px solid;background:var(--card);font-size:38px;font-weight:800;line-height:1}
+.step.r{border-color:var(--red);color:var(--red)}
+.step.b{border-color:var(--blue);color:var(--blue)}
+.step:active{transform:translateY(2px)}
+.step:disabled{opacity:.4;cursor:not-allowed}
+.stephint{margin:-4px 0 14px;text-align:center;font-size:20px;font-weight:600;color:var(--muted)}
+.ur{color:var(--red)}.ub{color:var(--blue)}
+.go{display:block;width:100%}
+#msg{margin-top:14px;border-radius:18px;padding:12px 14px;font-weight:700;border:3px solid transparent;display:none}
+#msg.show{display:block}
+#msg.ok{background:var(--goodbg);color:var(--good);border-color:var(--good)}
+#msg.no{background:var(--badbg);color:var(--bad);border-color:var(--bad)}
+#msg.warn{background:var(--warnbg);color:var(--warn);border-color:var(--warn)}
+#msg .big{font-size:28px;font-weight:800;display:block;margin-bottom:4px}
+#msg .hint{display:block;font-weight:600;color:var(--text);margin-top:8px;font-size:22px}
+#msg .hint b.r{color:var(--red)}#msg .hint b.b{color:var(--blue)}
+#next{margin-top:14px;width:100%;display:none}
+#next.show{display:block}
+#practice{display:none;text-align:center}
+#practice p{margin:0 0 10px;font-weight:700}
+#read{font-size:44px;font-weight:800}
+.hide{display:none!important}
+.score{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px;text-align:center}
+.score div{background:var(--card);border:3px solid var(--line);border-radius:18px;padding:8px 4px;font-weight:700}
+.score strong{display:block;font-size:34px;line-height:1.1}
+.score .t strong{color:var(--text)}.score .o strong{color:var(--good)}.score .x strong{color:var(--bad)}
+.reset{margin:16px auto 8px;display:block;font-size:22px;min-height:56px}
+#fx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:50}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>⏰ 시계 읽기 연습</h1>
+  <div class="levels" id="levels" role="group" aria-label="단계 선택"></div>
+
+  <div class="main">
+    <section class="card">
+      <svg id="clock" viewBox="0 0 200 200" role="img" aria-label="아날로그 시계"></svg>
+      <div class="tools">
+        <button class="btn" id="prBtn" aria-pressed="false">🖐️ 분침 돌려보기</button>
+      </div>
+    </section>
+
+    <section class="card" aria-live="polite">
+      <div id="quiz">
+        <p class="q">지금 몇 시 몇 분일까요?</p>
+        <div class="inputs">
+          <div class="grp">
+            <button type="button" class="step r" id="hMinus" aria-label="시 1시간 줄이기">−</button>
+            <input id="hIn" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="2" autocomplete="off" aria-label="시">
+            <button type="button" class="step r" id="hPlus" aria-label="시 1시간 늘리기">+</button>
+            <span class="u ur">시</span>
+          </div>
+          <div class="grp">
+            <button type="button" class="step b" id="mMinus" aria-label="분 줄이기">−</button>
+            <input id="mIn" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="2" autocomplete="off" aria-label="분">
+            <button type="button" class="step b" id="mPlus" aria-label="분 늘리기">+</button>
+            <span class="u ub">분</span>
+          </div>
+        </div>
+        <p class="stephint" id="stepHint"></p>
+        <button class="btn main-btn go" id="chk">정답 확인</button>
+        <div id="msg" role="status"></div>
+        <button class="btn main-btn" id="next">다음 문제 ▶</button>
+      </div>
+      <div id="practice">
+        <p>긴 바늘(분침)을 손가락으로 돌려 보세요!<br>짧은 바늘도 같이 움직여요.</p>
+        <div id="read">3시 30분</div>
+      </div>
+    </section>
+  </div>
+
+  <div class="score" aria-label="점수판">
+    <div class="t">📝 총 문제<strong id="sT">0</strong></div>
+    <div class="o">⭕ 맞은 수<strong id="sO">0</strong></div>
+    <div class="x">❌ 틀린 수<strong id="sX">0</strong></div>
+  </div>
+  <button class="btn reset" id="reset">🔄 처음부터 다시</button>
+</div>
+<canvas id="fx" aria-hidden="true"></canvas>
+
+<script>
+(function(){
+'use strict';
+var NS='http://www.w3.org/2000/svg';
+function $(id){return document.getElementById(id)}
+function rand(n){return Math.floor(Math.random()*n)}
+var reduce=window.matchMedia('(prefers-reduced-motion: reduce)');
+
+/* ---- 각도 공식 ---- */
+function angles(h,m){return {hour:(h%12)*30+m*0.5, min:m*6}}
+// 검증: 3:30 / 12:00 / 12:30 / 6:45 / 11:59
+(function(){
+  var t=[[3,30,105,180],[12,0,0,0],[12,30,15,180],[6,45,202.5,270],[11,59,359.5,354]];
+  t.forEach(function(c){var a=angles(c[0],c[1]);console.assert(a.hour===c[2]&&a.min===c[3],'angle test',c)});
+})();
+
+/* ---- 시계 SVG ---- */
+var svg=$('clock');
+function el(n,a){var e=document.createElementNS(NS,n);for(var k in a)e.setAttribute(k,a[k]);svg.appendChild(e);return e}
+el('circle',{cx:100,cy:100,r:97,'class':'face'});
+for(var i=0;i<60;i++){
+  var a=i*6*Math.PI/180,s=Math.sin(a),c=Math.cos(a),major=i%5===0,r1=93,r2=major?82:89;
+  el('line',{x1:100+r1*s,y1:100-r1*c,x2:100+r2*s,y2:100-r2*c,'class':'tk','stroke-width':major?3:1});
+}
+for(var n=1;n<=12;n++){
+  var b=n*30*Math.PI/180;
+  var t=el('text',{x:100+67*Math.sin(b),y:100-67*Math.cos(b),'class':'num'});
+  t.textContent=n;
+}
+var hh=el('line',{id:'hh',x1:100,y1:100,x2:100,y2:56});
+var mm=el('line',{id:'mm',x1:100,y1:100,x2:100,y2:20});
+el('circle',{id:'cap',cx:100,cy:100,r:6});
+function setClock(h,m){
+  var a=angles(h,m);
+  hh.setAttribute('transform','rotate('+a.hour+' 100 100)');
+  mm.setAttribute('transform','rotate('+a.min+' 100 100)');
+}
+
+/* ---- 상태 ---- */
+var level=1,cur=null,last=null,answered=false,practice=false,timer=null;
+var score={o:0,x:0};
+var ph=12,pm=0,dragging=false;
+var LV=[['1단계','정각'],['2단계','30분'],['3단계','5분 단위'],['4단계','1분 단위']];
+var levelsEl=$('levels');
+LV.forEach(function(v,i){
+  var b=document.createElement('button');
+  b.className='lv';b.type='button';b.setAttribute('aria-pressed',i===0);
+  b.innerHTML=v[0]+'<small>'+v[1]+'</small>';
+  b.addEventListener('click',function(){setLevel(i+1)});
+  levelsEl.appendChild(b);
+});
+function setLevel(l){
+  level=l;
+  [].forEach.call(levelsEl.children,function(b,i){b.setAttribute('aria-pressed',i+1===l)});
+  setPractice(false);
+  newProblem();
+}
+function minutesFor(l){
+  if(l===1)return [0];
+  if(l===2)return [0,30];
+  var r=[],i;
+  if(l===3){for(i=0;i<60;i+=5)r.push(i)}else{for(i=0;i<60;i++)r.push(i)}
+  return r;
+}
+
+/* ---- 문제 ---- */
+var hIn=$('hIn'),mIn=$('mIn'),chk=$('chk'),msg=$('msg'),nextBtn=$('next');
+
+/* ---- +/- 버튼 ---- */
+var stepBtns=[].slice.call(document.querySelectorAll('.step'));
+function minStep(){return level<=2?15:(level===3?5:1)}
+function updateStep(){
+  var s=minStep();
+  $('stepHint').textContent='+ − 버튼을 누르면 시는 1시간씩, 분은 '+s+'분씩 바뀌어요.';
+  $('mPlus').setAttribute('aria-label','분 '+s+'분 늘리기');
+  $('mMinus').setAttribute('aria-label','분 '+s+'분 줄이기');
+}
+function clearWarn(){if(msg.classList.contains('warn')){msg.className='';msg.innerHTML=''}}
+function bumpHour(d){
+  if(answered)return;clearWarn();
+  var n=parseInt(hIn.value,10);
+  if(isNaN(n)||n<1||n>12){hIn.value=d>0?1:12;return}
+  hIn.value=(((n-1+d)%12)+12)%12+1;
+}
+function bumpMin(d){
+  if(answered)return;clearWarn();
+  var s=minStep(),n=parseInt(mIn.value,10);
+  if(isNaN(n)){mIn.value=d>0?s%60:(60-s)%60;return}
+  mIn.value=(((n+d*s)%60)+60)%60;
+}
+$('hPlus').addEventListener('click',function(){bumpHour(1)});
+$('hMinus').addEventListener('click',function(){bumpHour(-1)});
+$('mPlus').addEventListener('click',function(){bumpMin(1)});
+$('mMinus').addEventListener('click',function(){bumpMin(-1)});
+function newProblem(){
+  clearTimeout(timer);
+  var ms=minutesFor(level),h,m;
+  do{h=1+rand(12);m=ms[rand(ms.length)]}while(last&&last.h===h&&last.m===m);
+  cur={h:h,m:m};last=cur;answered=false;
+  setClock(h,m);
+  hIn.value='';mIn.value='';hIn.disabled=mIn.disabled=chk.disabled=false;
+  stepBtns.forEach(function(b){b.disabled=false});updateStep();
+  msg.className='';msg.innerHTML='';
+  nextBtn.classList.remove('show');
+  if(!practice)hIn.focus({preventScroll:true});
+}
+function show(cls,html){msg.className='show '+cls;msg.innerHTML=html}
+function hint(h,m){
+  var nx=h%12+1,s1,n=Math.floor(m/5),r=m%5,s2;
+  if(m===0)s1='짧은 바늘이 <b class="r">'+h+'</b>을 가리키니 <b class="r">'+h+'시</b>예요.';
+  else s1='짧은 바늘이 <b class="r">'+h+'</b>과 <b class="r">'+nx+'</b> 사이에 있으니, 작은 숫자 <b class="r">'+h+'</b>이 시예요. → <b class="r">'+h+'시</b>';
+  if(m===0)s2='긴 바늘이 <b class="b">12</b>를 가리키면 <b class="b">0분</b>이에요.';
+  else if(r===0)s2='긴 바늘이 <b class="b">'+n+'</b>을 가리켜요 → '+n+'×5 = <b class="b">'+m+'분</b>';
+  else if(n===0)s2='긴 바늘이 12에서 눈금 '+r+'칸 간 곳이에요 → <b class="b">'+m+'분</b>';
+  else s2='긴 바늘이 <b class="b">'+n+'</b>에서 눈금 '+r+'칸 더 간 곳이에요 → '+n+'×5 = '+(n*5)+', '+(n*5)+'+'+r+' = <b class="b">'+m+'분</b>';
+  return '<span class="hint">💡 짧은 바늘(시침)이 가리키는 숫자가 ‘시’예요. 긴 바늘(분침)이 가리키는 숫자에 5를 곱하면 ‘분’이에요.</span>'+
+         '<span class="hint">👉 '+s1+'<br>👉 '+s2+'</span>';
+}
+function check(){
+  if(answered||practice)return;
+  var hs=hIn.value.trim(),ms=mIn.value.trim();
+  var ok=/^\d{1,2}$/.test(hs)&&/^\d{1,2}$/.test(ms);
+  var h=ok?parseInt(hs,10):NaN,m=ok?parseInt(ms,10):NaN;
+  if(!ok||h<1||h>12||m<0||m>59){
+    show('warn','<span class="big">⚠️ 숫자를 다시 확인해 주세요</span>시는 1~12, 분은 0~59 사이의 숫자예요.');
+    return;
+  }
+  answered=true;
+  hIn.disabled=mIn.disabled=chk.disabled=true;
+  stepBtns.forEach(function(b){b.disabled=true});
+  if(h===cur.h&&m===cur.m){
+    score.o++;updateScore();
+    show('ok','<span class="big">✅ 정답이에요! 🎉</span>잠시 후 다음 문제가 나와요.');
+    party();
+    timer=setTimeout(newProblem,1500);
+  }else{
+    score.x++;updateScore();
+    show('no','<span class="big">❌ 아쉬워요</span>정답은 <b>'+cur.h+'시 '+cur.m+'분</b>이에요.'+hint(cur.h,cur.m));
+    nextBtn.classList.add('show');
+    nextBtn.focus({preventScroll:true});
+  }
+}
+function updateScore(){
+  $('sT').textContent=score.o+score.x;
+  $('sO').textContent=score.o;
+  $('sX').textContent=score.x;
+}
+chk.addEventListener('click',check);
+[hIn,mIn].forEach(function(i){
+  i.addEventListener('input',function(){i.value=i.value.replace(/\D/g,'').slice(0,2)});
+  i.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();check()}});
+});
+nextBtn.addEventListener('click',newProblem);
+$('reset').addEventListener('click',function(){
+  score.o=score.x=0;updateScore();last=null;setPractice(false);newProblem();
+});
+
+/* ---- 연습 모드 ---- */
+var prBtn=$('prBtn');
+function readout(){
+  $('read').textContent=ph+'시 '+pm+'분';
+  setClock(ph,pm);
+}
+function setPractice(on){
+  practice=on;
+  prBtn.setAttribute('aria-pressed',on);
+  svg.classList.toggle('drag',on);
+  $('quiz').classList.toggle('hide',on);
+  $('practice').style.display=on?'block':'none';
+  if(on){clearTimeout(timer);ph=cur?cur.h:12;pm=cur?cur.m:0;readout()}
+  else if(cur){setClock(cur.h,cur.m)}
+}
+prBtn.addEventListener('click',function(){
+  var turnOn=!practice;
+  if(turnOn&&answered&&!nextBtn.classList.contains('show')){/* 정답 후 대기 중이면 다음 문제로 정리 */newProblem()}
+  setPractice(turnOn);
+  if(!turnOn&&!answered)hIn.focus({preventScroll:true});
+});
+function move(e){
+  var r=svg.getBoundingClientRect();
+  var dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height/2);
+  if(Math.abs(dx)<2&&Math.abs(dy)<2)return;
+  var a=Math.atan2(dx,-dy)*180/Math.PI;if(a<0)a+=360;
+  var nm=Math.round(a/6)%60;
+  if(pm>=45&&nm<15)ph=ph%12+1;
+  else if(pm<15&&nm>=45)ph=(ph+10)%12+1;
+  pm=nm;readout();
+}
+svg.addEventListener('pointerdown',function(e){
+  if(!practice)return;
+  dragging=true;try{svg.setPointerCapture(e.pointerId)}catch(_){}
+  e.preventDefault();move(e);
+});
+svg.addEventListener('pointermove',function(e){if(dragging)move(e)});
+['pointerup','pointercancel','lostpointercapture'].forEach(function(ev){
+  svg.addEventListener(ev,function(){dragging=false});
+});
+
+/* ---- 색종이·풍선 ---- */
+var cv=$('fx'),cx=cv.getContext('2d');
+var COLORS=['#ff4d6d','#ffc533','#2ec4b6','#3a86ff','#9b5de5','#ff9f1c'];
+function party(){
+  if(reduce.matches)return;
+  var dpr=window.devicePixelRatio||1,W=innerWidth,H=innerHeight;
+  cv.width=W*dpr;cv.height=H*dpr;cx.setTransform(dpr,0,0,dpr,0,0);
+  var ps=[],bs=[],i;
+  [[.28,.45],[.72,.45]].forEach(function(o){
+    for(i=0;i<50;i++){
+      var an=Math.random()*Math.PI*2,sp=3+Math.random()*9;
+      ps.push({x:W*o[0],y:H*o[1],vx:Math.cos(an)*sp,vy:Math.sin(an)*sp-4,w:6+Math.random()*7,h:4+Math.random()*5,
+        r:Math.random()*6,vr:(Math.random()-.5)*.4,c:COLORS[rand(COLORS.length)]});
+    }
+  });
+  for(i=0;i<7;i++)bs.push({x:W*(.08+i*.14),y:H+40+Math.random()*120,vy:3+Math.random()*2.5,ph:Math.random()*6,c:COLORS[rand(COLORS.length)]});
+  var t0=performance.now();
+  function frame(t){
+    var el=t-t0;
+    cx.clearRect(0,0,W,H);
+    if(el>1450){cx.clearRect(0,0,W,H);return}
+    cx.globalAlpha=el>1150?Math.max(0,(1450-el)/300):1;
+    ps.forEach(function(p){
+      p.vy+=.28;p.vx*=.985;p.x+=p.vx;p.y+=p.vy;p.r+=p.vr;
+      cx.save();cx.translate(p.x,p.y);cx.rotate(p.r);cx.fillStyle=p.c;cx.fillRect(-p.w/2,-p.h/2,p.w,p.h);cx.restore();
+    });
+    bs.forEach(function(b){
+      b.y-=b.vy;b.ph+=.06;var x=b.x+Math.sin(b.ph)*14;
+      cx.strokeStyle='#1b2a41';cx.lineWidth=1.5;cx.beginPath();cx.moveTo(x,b.y+34);cx.lineTo(x+Math.sin(b.ph)*6,b.y+80);cx.stroke();
+      cx.fillStyle=b.c;cx.beginPath();cx.ellipse(x,b.y,24,30,0,0,Math.PI*2);cx.fill();
+      cx.fillStyle='rgba(255,255,255,.45)';cx.beginPath();cx.ellipse(x-8,b.y-10,5,9,.5,0,Math.PI*2);cx.fill();
+    });
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+
+/* ---- 시작 ---- */
+newProblem();
+})();
+</script>
+</body>
+</html>
