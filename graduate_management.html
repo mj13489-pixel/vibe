@@ -403,22 +403,16 @@
                  <div className="text-gray-400"><i className="fas fa-grip-vertical"></i></div>
               )}
             </div>
-            
             <h3 className="font-bold text-gray-800 text-lg leading-tight mb-2 break-keep pointer-events-none">{c.name}</h3>
-            
             <div className="mt-auto pt-3 border-t border-gray-100/50 text-xs text-gray-500 flex flex-wrap gap-2 items-center pointer-events-none mb-2">
               <span className="bg-gray-100 px-2 py-1 rounded-md whitespace-nowrap">{c.year}학년 {c.semester}학기</span>
               <span className="bg-gray-100 px-2 py-1 rounded-md whitespace-nowrap">{c.credits}학점</span>
               {c.prof && <span className="bg-gray-100 px-2 py-1 rounded-md whitespace-nowrap"><i className="fas fa-user-tie mr-1"></i>{c.prof}</span>}
             </div>
-
-            {/* 기본이수과목 및 교과교육학 표시 뱃지 */}
             <div className="flex gap-1 flex-wrap pointer-events-none">
               {c.isBasic && <span className="text-[10px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded border border-purple-200 whitespace-nowrap">기본이수과목</span>}
               {c.isEdu && <span className="text-[10px] bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded border border-orange-200 whitespace-nowrap">교과교육학</span>}
             </div>
-            
-            {/* 로드맵 뷰일 때 학기 선택 드롭다운 (모바일 터치용) */}
             {isPlanView && (
               <select 
                 className="mt-3 w-full text-xs p-1 border rounded border-gray-300 bg-gray-50 focus:outline-none focus:border-green-500 text-gray-600"
@@ -440,23 +434,32 @@
         );
       };
 
+      // 📌 수정된 부분: 완료된 학점과 시뮬레이터에 '예정된' 학점을 구분해서 계산합니다!
       const getStats = (list, reqs) => {
         let earned = { core: 0, select: 0, basic: 0, edu: 0 };
+        let planned = { core: 0, select: 0, basic: 0, edu: 0 };
+        
         list.forEach(c => {
           if (completedCourses[c.id]) {
             if (c.type === '전공핵심') earned.core += c.credits;
             if (c.type === '전공선택') earned.select += c.credits;
             if (c.isBasic) earned.basic += c.credits;
             if (c.isEdu) earned.edu += c.credits;
+          } else if (plannedCourses[c.id] && plannedCourses[c.id] !== "unassigned") {
+            // 미이수 상태이면서 로드맵에 담긴 과목
+            if (c.type === '전공핵심') planned.core += c.credits;
+            if (c.type === '전공선택') planned.select += c.credits;
+            if (c.isBasic) planned.basic += c.credits;
+            if (c.isEdu) planned.edu += c.credits;
           }
         });
         const totalReq = reqs["전공핵심"] + reqs["전공선택"];
         const totalEarned = earned.core + earned.select;
+        const totalPlanned = planned.core + planned.select;
         
-        return { earned, reqs, totalReq, totalEarned };
+        return { earned, planned, reqs, totalReq, totalEarned, totalPlanned };
       };
 
-      // 로그인 화면
       if (!isLoggedIn) {
         return (
           <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-green-50 to-emerald-100">
@@ -498,16 +501,27 @@
         );
       }
 
-      const renderProgressBar = (label, current, max, colorClass) => {
-        const percent = Math.min(100, Math.round((current / max) * 100)) || 0;
+      // 📌 수정된 부분: 진행 바에 시뮬레이터에 '예정'된 학점이 옅은 색으로 누적되도록 디자인 변경!
+      const renderProgressBar = (label, current, planned, max, colorClass, plannedColorClass) => {
+        const currentPercent = Math.min(100, Math.round((current / max) * 100)) || 0;
+        const plannedPercent = Math.min(100 - currentPercent, Math.round((planned / max) * 100)) || 0;
+        const totalPercent = Math.min(100, Math.round(((current + planned) / max) * 100)) || 0;
+
         return (
           <div className="mb-4 last:mb-0">
             <div className="flex justify-between text-sm font-medium mb-1.5">
               <span className="text-gray-700">{label}</span>
-              <span className="text-gray-900">{current} / {max}학점 <span className="text-gray-400 text-xs ml-1">({percent}%)</span></span>
+              <span className="text-gray-900 text-xs">
+                이수 <span className="font-bold text-sm">{current}</span> 
+                {planned > 0 && <span className="text-blue-500 font-bold ml-1">(+{planned})</span>} / {max}학점 
+                <span className="text-gray-400 ml-1">({totalPercent}%)</span>
+              </span>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
-              <div className={`h-2.5 rounded-full ${colorClass} transition-all duration-500`} style={{ width: `${percent}%` }}></div>
+            <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden flex">
+              <div className={`h-2.5 ${colorClass} transition-all duration-500`} style={{ width: `${currentPercent}%` }}></div>
+              {planned > 0 && (
+                <div className={`h-2.5 ${plannedColorClass} transition-all duration-500 opacity-60`} style={{ width: `${plannedPercent}%` }}></div>
+              )}
             </div>
           </div>
         );
@@ -527,18 +541,22 @@
                   <p className="text-sm text-gray-500 mt-1">{studentYear}학번 • {majorType} 기준</p>
                 </div>
                 <div className="text-right">
-                  <div className="text-sm text-gray-500">총 전공 이수</div>
-                  <div className="text-3xl font-bold text-green-600">{envStats.totalEarned}<span className="text-lg text-gray-400">/{envStats.totalReq}</span></div>
+                  <div className="text-xs text-gray-400 mb-1">총 전공 학점 (이수<span className="text-blue-500">+예정</span>)</div>
+                  <div className="text-3xl font-bold text-green-600">
+                    {envStats.totalEarned}
+                    {envStats.totalPlanned > 0 && <span className="text-blue-500 text-2xl">+{envStats.totalPlanned}</span>}
+                    <span className="text-lg text-gray-400"> / {envStats.totalReq}</span>
+                  </div>
                 </div>
               </div>
               <div className="grid md:grid-cols-2 gap-x-12 gap-y-4">
                 <div>
-                  {renderProgressBar("전공핵심", envStats.earned.core, envStats.reqs["전공핵심"], "bg-red-500")}
-                  {renderProgressBar("전공선택", envStats.earned.select, envStats.reqs["전공선택"], "bg-blue-500")}
+                  {renderProgressBar("전공핵심", envStats.earned.core, envStats.planned.core, envStats.reqs["전공핵심"], "bg-red-500", "bg-red-300")}
+                  {renderProgressBar("전공선택", envStats.earned.select, envStats.planned.select, envStats.reqs["전공선택"], "bg-blue-500", "bg-blue-300")}
                 </div>
                 <div>
-                  {renderProgressBar("기본이수과목", envStats.earned.basic, envStats.reqs["기본이수과목"], "bg-purple-500")}
-                  {renderProgressBar("교과교육학", envStats.earned.edu, envStats.reqs["교과교육학"], "bg-orange-500")}
+                  {renderProgressBar("기본이수과목", envStats.earned.basic, envStats.planned.basic, envStats.reqs["기본이수과목"], "bg-purple-500", "bg-purple-300")}
+                  {renderProgressBar("교과교육학", envStats.earned.edu, envStats.planned.edu, envStats.reqs["교과교육학"], "bg-orange-500", "bg-orange-300")}
                 </div>
               </div>
             </div>
@@ -551,18 +569,22 @@
                     <p className="text-sm text-gray-500 mt-1">이수 현황</p>
                   </div>
                   <div className="text-right">
-                    <div className="text-sm text-gray-500">총 전공 이수</div>
-                    <div className="text-3xl font-bold text-indigo-600">{subStats.totalEarned}<span className="text-lg text-gray-400">/{subStats.totalReq}</span></div>
+                    <div className="text-xs text-gray-400 mb-1">총 전공 학점 (이수<span className="text-blue-500">+예정</span>)</div>
+                    <div className="text-3xl font-bold text-indigo-600">
+                      {subStats.totalEarned}
+                      {subStats.totalPlanned > 0 && <span className="text-blue-500 text-2xl">+{subStats.totalPlanned}</span>}
+                      <span className="text-lg text-gray-400"> / {subStats.totalReq}</span>
+                    </div>
                   </div>
                 </div>
                 <div className="grid md:grid-cols-2 gap-x-12 gap-y-4">
                   <div>
-                    {renderProgressBar("전공핵심", subStats.earned.core, subStats.reqs["전공핵심"], "bg-red-500")}
-                    {renderProgressBar("전공선택", subStats.earned.select, subStats.reqs["전공선택"], "bg-blue-500")}
+                    {renderProgressBar("전공핵심", subStats.earned.core, subStats.planned.core, subStats.reqs["전공핵심"], "bg-red-500", "bg-red-300")}
+                    {renderProgressBar("전공선택", subStats.earned.select, subStats.planned.select, subStats.reqs["전공선택"], "bg-blue-500", "bg-blue-300")}
                   </div>
                   <div>
-                    {renderProgressBar("기본이수과목", subStats.earned.basic, subStats.reqs["기본이수과목"], "bg-purple-500")}
-                    {renderProgressBar("교과교육학", subStats.earned.edu, subStats.reqs["교과교육학"], "bg-orange-500")}
+                    {renderProgressBar("기본이수과목", subStats.earned.basic, subStats.planned.basic, subStats.reqs["기본이수과목"], "bg-purple-500", "bg-purple-300")}
+                    {renderProgressBar("교과교육학", subStats.earned.edu, subStats.planned.edu, subStats.reqs["교과교육학"], "bg-orange-500", "bg-orange-300")}
                   </div>
                 </div>
               </div>
@@ -579,8 +601,49 @@
         const semesters = ["1-1", "1-2", "2-1", "2-2", "3-1", "3-2", "4-1", "4-2"];
         const unassignedCourses = allUncompleted.filter(c => !plannedCourses[c.id] || plannedCourses[c.id] === "unassigned");
         
+        const majorType = doubleMajor === '없음' ? "단일전공" : "복수전공";
+        const envStats = getStats(envCourses, MAJOR_REQUIREMENTS[studentYear][majorType]);
+        const subStats = doubleMajor !== '없음' ? getStats(subCourses, DOUBLE_MAJOR_REQUIREMENTS[doubleMajor]) : null;
+
+        // 📌 남은 필수 학점을 계산해주는 안내 바 헬퍼 함수
+        const getRemainingText = (stats) => {
+          const reqCore = Math.max(0, stats.reqs["전공핵심"] - stats.earned.core - stats.planned.core);
+          const reqSel = Math.max(0, stats.reqs["전공선택"] - stats.earned.select - stats.planned.select);
+          const reqBas = Math.max(0, stats.reqs["기본이수과목"] - stats.earned.basic - stats.planned.basic);
+          const reqEdu = Math.max(0, stats.reqs["교과교육학"] - stats.earned.edu - stats.planned.edu);
+          
+          if ((reqCore + reqSel + reqBas + reqEdu) === 0) {
+            return <div className="text-sm font-bold text-green-600 bg-green-50 px-3 py-2 rounded-lg border border-green-200 mt-2">🎉 축하합니다! 졸업을 위한 모든 과목 배치가 끝났습니다!</div>;
+          }
+
+          return (
+            <div className="flex flex-wrap gap-2 mt-2">
+              <span className="text-sm text-gray-500 font-bold mr-1 self-center">필요:</span>
+              {reqCore > 0 && <span className="text-xs font-bold bg-red-50 text-red-600 px-2 py-1.5 rounded border border-red-100 shadow-sm">전공핵심 {reqCore}학점</span>}
+              {reqSel > 0 && <span className="text-xs font-bold bg-blue-50 text-blue-600 px-2 py-1.5 rounded border border-blue-100 shadow-sm">전공선택 {reqSel}학점</span>}
+              {reqBas > 0 && <span className="text-xs font-bold bg-purple-50 text-purple-600 px-2 py-1.5 rounded border border-purple-100 shadow-sm">기본이수 {reqBas}학점</span>}
+              {reqEdu > 0 && <span className="text-xs font-bold bg-orange-50 text-orange-600 px-2 py-1.5 rounded border border-orange-100 shadow-sm">교과교육학 {reqEdu}학점</span>}
+            </div>
+          );
+        };
+
         return (
           <div className="flex flex-col gap-6">
+            
+            {/* 📌 시뮬레이터 현황판 (남은 학점 표시) */}
+            <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-3">
+              <div>
+                <h3 className="font-bold text-gray-800 text-sm mb-1">📌 환경교육과 (주전공) 더 담아야 할 학점</h3>
+                {getRemainingText(envStats)}
+              </div>
+              {subStats && (
+                <div className="pt-3 border-t border-gray-100 mt-1">
+                  <h3 className="font-bold text-gray-800 text-sm mb-1">📌 {doubleMajor} (복수전공) 더 담아야 할 학점</h3>
+                  {getRemainingText(subStats)}
+                </div>
+              )}
+            </div>
+
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
               <div className="flex justify-between items-center mb-4">
                 <div>
@@ -620,7 +683,7 @@
                   >
                     <div className="flex justify-between items-center mb-4 pb-2 border-b border-gray-100 pointer-events-none">
                       <h3 className="font-bold text-gray-700">{sem[0]}학년 {sem[2]}학기</h3>
-                      <span className="text-xs font-bold bg-green-100 text-green-700 px-2 py-1 rounded-full">{credits}학점</span>
+                      <span className="text-xs font-bold bg-green-100 text-green-700 px-2 py-1 rounded-full">{credits}학점 담음</span>
                     </div>
                     <div className="flex flex-col gap-3 overflow-y-auto custom-scrollbar pr-1 flex-1">
                       {plans.length === 0 ? (
